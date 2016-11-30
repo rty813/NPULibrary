@@ -27,7 +27,6 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private EditText editText;
     private TextView textView;
-    private ScrollView scrollView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,14 +35,13 @@ public class MainActivity extends AppCompatActivity {
         progressBar.setVisibility(View.GONE);
         editText = (EditText) findViewById(R.id.editText2);
         textView = (TextView) findViewById(R.id.textView2);
-        scrollView = (ScrollView) findViewById(R.id.scroolView);
 
         findViewById(R.id.btnSearch).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 progressBar.setVisibility(View.VISIBLE);
                 String book = editText.getText().toString();
-                new AsyncTask<String, Void, String>(){
+                new AsyncTask<String, String, String>(){
                     @Override
                     protected String doInBackground(String... strings) {
 
@@ -62,9 +60,11 @@ public class MainActivity extends AppCompatActivity {
                                     new InputStreamReader(connection.getInputStream())
                             );
                             String line;
-//                            Toast.makeText(MainActivity.this,"开始读取数据",Toast.LENGTH_SHORT).show();
                             StringBuilder builder = new StringBuilder();
                             while ((line = br.readLine()) != null){
+//                                line = line.replace("&#x" , "\\u");
+//                                line = line.replace(";\\u","\\u");
+                                publishProgress(line);
                                 builder.append(line);
                                 System.out.println(line);
                             }
@@ -81,9 +81,34 @@ public class MainActivity extends AppCompatActivity {
                     }
                     @Override
                     protected void onPostExecute(String string) {
-                        textView.setText(string);
+                        //textView.setText(string);
                         progressBar.setVisibility(View.GONE);
                         super.onPostExecute(string);
+                    }
+
+                    @Override
+                    protected void onProgressUpdate(String... values) {
+                        String str = values[0];
+                        if (str.indexOf("中文图书") != -1){
+                            String finalbook = "";
+                            String[] bookname = str.split("&#x");
+                            int i = bookname.length;
+                            for (String book : bookname){
+                                String book1 = book.substring(0,4);
+                                if (book1.indexOf(" ") != -1)
+                                    continue;
+                                book = "\\u" + book;
+                                String bookinChinese = CodeChange.unicodeToString(book);
+                                //bookinChinese.replace(";" , "");
+                                //System.out.print(bookinChinese);
+                                finalbook += bookinChinese;
+                            }
+                            finalbook.replaceAll(";","");
+                            System.out.print(finalbook.indexOf(";") + " ");
+                            System.out.println(finalbook);
+                            textView.append(finalbook);
+                        }
+                        super.onProgressUpdate(values);
                     }
                 }.execute(book);
             }
