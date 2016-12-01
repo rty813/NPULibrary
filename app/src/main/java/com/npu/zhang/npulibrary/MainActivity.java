@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
                     protected String doInBackground(String... strings) {
                         try {
                             System.out.println("Begin to connnet!");
-                            Document document = Jsoup.parse(new URL("http://202.117.255.187:8080/opac/openlink.php?strSearchType=title&strText=" + strings[0] + "&page=2"), 5000);
+                            Document document = Jsoup.parse(new URL("http://202.117.255.187:8080/opac/openlink.php?strSearchType=title&strText=" + strings[0] + "&page=1"), 5000);
                             System.out.println("Connect successful!");
                             Element link = document.select("ol").first();
                             Elements atags = link.select("a");

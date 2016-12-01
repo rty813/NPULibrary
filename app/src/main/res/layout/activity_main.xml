@@ -50,4 +50,14 @@
         android:layout_marginTop="21dp"
         android:id="@+id/textView2" />
 
+    <ListView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/textView2"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginLeft="47dp"
+        android:layout_marginStart="47dp"
+        android:layout_marginTop="42dp" />
+
 </RelativeLayout>
