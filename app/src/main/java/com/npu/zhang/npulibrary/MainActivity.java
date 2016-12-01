@@ -1,12 +1,17 @@
 package com.npu.zhang.npulibrary;
 
+import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.provider.DocumentsContract;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.ButtonBarLayout;
 import android.support.v7.widget.ScrollingTabContainerView;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -39,30 +44,33 @@ import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
-    private ProgressBar progressBar;
     private EditText editText;
     private TextView textView;
     private ListView listView;
+    private ProgressDialog waitingDialog;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        progressBar = (ProgressBar) findViewById(R.id.progressBar);
-        progressBar.setVisibility(View.GONE);
         editText = (EditText) findViewById(R.id.editText2);
         listView = (ListView) findViewById(R.id.listView);
+        waitingDialog = new ProgressDialog(MainActivity.this);
 
         findViewById(R.id.btnSearch).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                progressBar.setVisibility(View.VISIBLE);
+                //waitingDialog.setTitle("");
+                waitingDialog.setMessage("查询中...");
+                waitingDialog.setIndeterminate(true);
+                waitingDialog.setCancelable(false);
+                waitingDialog.show();
+
                 String book = editText.getText().toString();
                 if (book.equals(null)){
                     return;
                 }
                 String page = "1";
                 AsyncTask(book,page);
-
             }
         });
 
@@ -102,6 +110,9 @@ public class MainActivity extends AppCompatActivity {
                         if (h3Tag.text().equals("馆藏"))
                             continue;
                         String bookName = h3Tag.text().substring(4);
+                        if (bookName.indexOf("图书") == 0){
+                            bookName = bookName.substring(2);
+                        }
                         String bookLink ="http://202.117.255.187:8080/opac/" + aTag.attr("href");
                         String bookIntroduce = pTag.text().substring(0,pTag.text().length()-6);
                         String bookNameReal = aTag.text().substring(aTag.text().indexOf(".") + 1);
@@ -125,7 +136,7 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override
             protected void onPostExecute(List<Map<String, String>> list) {
-                progressBar.setVisibility(View.GONE);
+                waitingDialog.cancel();
                 if (list == null){
                     Toast.makeText(MainActivity.this, "无结果", Toast.LENGTH_SHORT).show();
                     return;
@@ -136,5 +147,22 @@ public class MainActivity extends AppCompatActivity {
             }
 
         }.execute(book,page);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        menu.add("关于");
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        final AlertDialog.Builder normalDialog =
+                new AlertDialog.Builder(MainActivity.this);
+        normalDialog.setTitle("关于");
+        normalDialog.setMessage("本项目已开源，\n网址：https://github.com/rty813/NPULibrary\nBy 西北工业大学 张金阳\nQQ：523213189");
+        normalDialog.setPositiveButton("确定",null);
+        normalDialog.show();
+        return super.onOptionsItemSelected(item);
     }
 }
