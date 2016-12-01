@@ -40,24 +40,13 @@
         android:layout_toRightOf="@+id/editText2"
         android:layout_toEndOf="@+id/editText2" />
 
-    <TextView
-        android:text="TextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/btnSearch"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_marginTop="21dp"
-        android:id="@+id/textView2" />
-
     <ListView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/textView2"
+        android:id="@+id/listView"
+        android:layout_below="@+id/btnSearch"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:layout_marginLeft="47dp"
-        android:layout_marginStart="47dp"
-        android:layout_marginTop="42dp" />
+        android:layout_marginTop="27dp" />
 
 </RelativeLayout>
