@@ -65,6 +65,9 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 count++;
                 bookName = editText.getText().toString();
+                bookName = bookName.replace("+", "%2B");
+                bookName = bookName.replace(" ", "+");
+                System.out.println(bookName);
                 if (bookName.equals("")){
                     return;
                 }
@@ -98,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
         protected String[] doInBackground(String... strings) {
             try {
                 System.out.println("Begin to connnet!");
+                System.out.println(strings[0]);
                 Document document = Jsoup.parse(new URL("http://202.117.255.187:8080/opac/openlink.php?strSearchType=title&strText=" + strings[0] + "&page=" + strings[1]), 5000);
                 System.out.println("Connect successful!");
                 //获取总页数
@@ -134,9 +138,27 @@ public class MainActivity extends AppCompatActivity {
                     String bookLink ="http://202.117.255.187:8080/opac/" + aTag.attr("href");
                     String bookIntroduce = pTag.text().substring(0,pTag.text().length()-6);
                     String bookNameReal = aTag.text().substring(aTag.text().indexOf(".") + 1);
+                    StringBuilder builder = new StringBuilder();
+
+                    Document detailDoc = Jsoup.parse(new URL(bookLink), 5000);
+                    Elements tableTags = detailDoc.select("table");
+                    for (Element tableTag : tableTags){
+                        //System.out.println(tableTag.text());
+                        if (tableTag.attr("id").equals("item")){
+                            Elements trTags = tableTag.select("tr");
+                            for (Element trTag : trTags){
+                                if (trTag.attr("class").equals("whitetext")){
+                                    builder.append(trTag.text());
+                                }
+                            }
+                        }
+                    }
+                    String bookPlace = builder.toString();
+
                     System.out.println("书名：" + bookName);
                     System.out.println("链接：" + bookLink);
                     System.out.println("介绍：" + bookIntroduce);
+                    System.out.println("地址：" + bookPlace);
                     System.out.println();
                     Map<String, String> map = new HashMap<String, String>();
 
@@ -144,6 +166,7 @@ public class MainActivity extends AppCompatActivity {
                     map.put("bookLink", bookLink);
                     map.put("bookIntroduce", bookIntroduce);
                     map.put("bookNameReal", bookNameReal);
+                    map.put("bookPlace", bookPlace);
                     lvList.add(map);
                     list.add(map);
                 }
