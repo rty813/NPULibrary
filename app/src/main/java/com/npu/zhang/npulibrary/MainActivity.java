@@ -6,6 +6,8 @@ import android.os.AsyncTask;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Html;
+import android.text.Spanned;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -60,6 +62,13 @@ public class MainActivity extends AppCompatActivity {
         progressDialog.setMessage("请等候");
         progressDialog.setCancelable(true);
 
+        findViewById(R.id.button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(MainActivity.this,Main2Activity.class));
+            }
+        });
+
         findViewById(R.id.btnSearch).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -76,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
                     progressDialog.show();
                 }else
                 {
+                    System.out.println("正在从onClick方法进入asyncTask");
                     lvList.removeAll(lvList);
                     simpleAdapter.notifyDataSetChanged();
                     progressBar.setVisibility(View.VISIBLE);
@@ -96,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-    public class myAsyncTask extends AsyncTask<String, Void, String[]> {
+    public class myAsyncTask extends AsyncTask<String, String, String[]> {
         @Override
         protected String[] doInBackground(String... strings) {
             try {
@@ -106,15 +116,22 @@ public class MainActivity extends AppCompatActivity {
                 System.out.println("Connect successful!");
                 //获取总页数
                 Elements spanTags = document.select("span");
+                System.out.println("正在获取总页数:" + "http://202.117.255.187:8080/opac/openlink.php?strSearchType=title&strText=" + strings[0] + "&page=" + strings[1]);
+                boolean pageNumChanged = false;
                 for (Element spanTag : spanTags){
                     if (spanTag.attr("class").equals("pagination")){
                         Elements fontTags = spanTag.select("font");
                         for (Element fontTag : fontTags){
                             if (fontTag.attr("color").equals("black")){
                                 pageNum = Integer.parseInt(fontTag.text());
+                                pageNumChanged = true;
+                                System.out.println("doPageNum: " + pageNum);
                             }
                         }
                     }
+                }
+                if (!pageNumChanged){
+                    pageNum = 1;
                 }
 
                 Element link = document.select("ol").first();
@@ -123,20 +140,26 @@ public class MainActivity extends AppCompatActivity {
                     return strings;
                 }
 
+                String thisCount = strings[2];
+
                 Elements liTags = link.select("li");
                 List<Map<String, String>> list = new ArrayList<Map<String, String>>();
                 for (Element liTag : liTags){
+                    if (Integer.parseInt(thisCount) < count){
+                        return null;
+                    }
                     Element h3Tag = liTag.select("h3").first();
                     Element aTag = liTag.select("a").first();
                     Element pTag = liTag.select("p").first();
                     if (h3Tag.text().equals("馆藏"))
                         continue;
+                    Element bTag = h3Tag.select("b").first();
                     String bookName = h3Tag.text().substring(4);
                     if (bookName.indexOf("图书") == 0){
                         bookName = bookName.substring(2);
                     }
                     String bookLink ="http://202.117.255.187:8080/opac/" + aTag.attr("href");
-                    String bookIntroduce = pTag.text().substring(0,pTag.text().length()-6);
+                    String bookIntroduce = pTag.text().substring(14,pTag.text().length()-6);
                     String bookNameReal = aTag.text().substring(aTag.text().indexOf(".") + 1);
                     StringBuilder builder = new StringBuilder();
 
@@ -148,26 +171,42 @@ public class MainActivity extends AppCompatActivity {
                             Elements trTags = tableTag.select("tr");
                             for (Element trTag : trTags){
                                 if (trTag.attr("class").equals("whitetext")){
-                                    builder.append(trTag.text());
+                                    if (trTag.select("td").first().text().indexOf("订购中") != -1){
+                                        break;
+                                    }
+                                    Element tdTag1 = trTag.select("td").get(4);
+                                    Element tdTag2 = trTag.select("td").get(5);
+                                    if ((tdTag1 == null) && (tdTag2 == null)){
+                                        System.out.println("此图书正在订阅");
+                                        continue;
+                                    }
+                                    builder.append("\n" + tdTag1.text().replace("校区", ""));
+                                    if (tdTag2.text().length() < 5)
+                                        builder.append(tdTag2.text() + "\n");
+                                    else
+                                        builder.append("\n" + tdTag2.text() + "\n");
                                 }
                             }
                         }
                     }
                     String bookPlace = builder.toString();
-
-                    System.out.println("书名：" + bookName);
-                    System.out.println("链接：" + bookLink);
-                    System.out.println("介绍：" + bookIntroduce);
-                    System.out.println("地址：" + bookPlace);
+                    if (bookPlace.equals("")){
+                        bookPlace = "\n此书刊可能正在订购中或者处理中";
+                    }
+//                    System.out.println("书名：" + bookName);
+//                    System.out.println("链接：" + bookLink);
+//                    System.out.println("介绍：" + bookIntroduce);
+//                    System.out.println("地址：" + bookPlace);
                     System.out.println();
                     Map<String, String> map = new HashMap<String, String>();
 
                     map.put("bookName", bookName);
                     map.put("bookLink", bookLink);
-                    map.put("bookIntroduce", bookIntroduce);
+                    map.put("bookIntroduce", bookIntroduce + "\n" + bookPlace);
                     map.put("bookNameReal", bookNameReal);
                     map.put("bookPlace", bookPlace);
                     lvList.add(map);
+                    publishProgress(strings);
                     list.add(map);
                 }
                 return strings;
@@ -178,7 +217,29 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
+        protected void onProgressUpdate(String... values) {
+            String book = values[0];
+            String page = values[1];
+            String thisCount = values[2];
+            if (Integer.parseInt(thisCount) < count){
+                lvList.removeAll(lvList);
+                simpleAdapter.notifyDataSetChanged();
+                //progressBar.setVisibility(View.GONE);
+                progressDialog.cancel();
+                System.out.println(book);
+                System.out.println(bookName);
+                new myAsyncTask().execute(bookName, "1", count+"");
+                return;
+            }
+            simpleAdapter.notifyDataSetChanged();
+            super.onProgressUpdate(values);
+        }
+
+        @Override
         protected void onPostExecute(String... strings) {
+            if ((strings == null)||(Integer.parseInt(strings[2]) < count)){
+                return;
+            }
             if (lvList.size() == 0){
                 progressBar.setVisibility(View.GONE);
                 Toast.makeText(MainActivity.this, "无结果", Toast.LENGTH_SHORT).show();
@@ -188,15 +249,7 @@ public class MainActivity extends AppCompatActivity {
             String book = strings[0];
             String page = strings[1];
             String thisCount = strings[2];
-            if (Integer.parseInt(thisCount) < count){
-                lvList.removeAll(lvList);
-                simpleAdapter.notifyDataSetChanged();
-                //progressBar.setVisibility(View.GONE);
-                progressDialog.cancel();
-                new myAsyncTask().execute(bookName, "1", count+"");
-                return;
-            }
-            simpleAdapter.notifyDataSetChanged();
+            System.out.println("now pageNum: " + pageNum);
             if ((Integer.parseInt(page) < pageNum)){
                 page = (Integer.parseInt(page) + 1) + "";
                 new myAsyncTask().execute(book, page, thisCount);
