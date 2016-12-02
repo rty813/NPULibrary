@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
-    private final String version = "ver1.2";
+    private final String version = "ver1.3";
     private EditText editText;
     private TextView textView;
     private ListView listView;
@@ -65,6 +65,10 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 count++;
                 bookName = editText.getText().toString();
+                if (bookName.equals("")){
+                    return;
+                }
+                editText.setText("");
                 if (progressBar.getVisibility() == View.VISIBLE){
                     progressDialog.show();
                 }else
@@ -112,15 +116,12 @@ public class MainActivity extends AppCompatActivity {
                 Element link = document.select("ol").first();
                 if (link == null){
                     System.out.println("NullPointer!");
-                    return null;
+                    return strings;
                 }
 
                 Elements liTags = link.select("li");
                 List<Map<String, String>> list = new ArrayList<Map<String, String>>();
                 for (Element liTag : liTags){
-                    if (this.isCancelled()){
-                        return null;
-                    }
                     Element h3Tag = liTag.select("h3").first();
                     Element aTag = liTag.select("a").first();
                     Element pTag = liTag.select("p").first();
@@ -155,6 +156,12 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String... strings) {
+            if (lvList.size() == 0){
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(MainActivity.this, "无结果", Toast.LENGTH_SHORT).show();
+                System.out.println("无结果");
+                return;
+            }
             String book = strings[0];
             String page = strings[1];
             String thisCount = strings[2];
@@ -167,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             simpleAdapter.notifyDataSetChanged();
-            if ((strings != null) && (Integer.parseInt(page) < pageNum)){
+            if ((Integer.parseInt(page) < pageNum)){
                 page = (Integer.parseInt(page) + 1) + "";
                 new myAsyncTask().execute(book, page, thisCount);
             }else
