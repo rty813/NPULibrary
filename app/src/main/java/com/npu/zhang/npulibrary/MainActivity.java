@@ -1,8 +1,10 @@
 package com.npu.zhang.npulibrary;
 
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.support.annotation.IntegerRes;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -11,11 +13,15 @@ import android.text.Spanned;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.SimpleAdapter;
+import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,8 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity {
-    private final String version = "ver1.3";
+public class MainActivity extends AppCompatActivity{
+    private final String version = "ver1.3.1";
     private EditText editText;
     private TextView textView;
     private ListView listView;
@@ -41,38 +47,56 @@ public class MainActivity extends AppCompatActivity {
     private String bookName;
     private SimpleAdapter simpleAdapter;
     private ProgressBar progressBar;
-    private int pageNum;
-    private int count;
+    private Spinner spinner;
+    private Switch aSwitch;
+    private Button btnStop;
+    private Button btnSearch;
     private ProgressDialog progressDialog;
+    private boolean stopFlag;
+    private int bookCount;
+    private int nowBookCount;
+    private InputMethodManager imm;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        spinner = (Spinner) findViewById(R.id.spinner);
+        aSwitch = (Switch) findViewById(R.id.switch1);
         editText = (EditText) findViewById(R.id.editText2);
         listView = (ListView) findViewById(R.id.listView);
+        btnSearch = (Button) findViewById(R.id.btnSearch);
+        btnStop = (Button) findViewById(R.id.btnStop);
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
         progressBar.setVisibility(View.GONE);
+
+        stopFlag = false;
         lvList = new ArrayList<>();
         simpleAdapter = new SimpleAdapter(MainActivity.this, lvList, android.R.layout.simple_list_item_2,
                 new String[] {"bookName","bookIntroduce"}, new int[] {android.R.id.text1, android.R.id.text2});
         listView.setAdapter(simpleAdapter);
-        count = 0;
-        final myAsyncTask[] asyncTask = new myAsyncTask[1000];
         progressDialog = new ProgressDialog(MainActivity.this);
         progressDialog.setMessage("请等候");
         progressDialog.setCancelable(true);
 
-        findViewById(R.id.button).setOnClickListener(new View.OnClickListener() {
+//        findViewById(R.id.button).setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                startActivity(new Intent(MainActivity.this,Main2Activity.class));
+//            }
+//        });
+        btnStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startActivity(new Intent(MainActivity.this,Main2Activity.class));
+                stopFlag = true;
+                progressDialog.show();
             }
         });
 
-        findViewById(R.id.btnSearch).setOnClickListener(new View.OnClickListener() {
+        btnSearch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                count++;
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
                 bookName = editText.getText().toString();
                 bookName = bookName.replace("+", "%2B");
                 bookName = bookName.replace(" ", "+");
@@ -80,17 +104,15 @@ public class MainActivity extends AppCompatActivity {
                 if (bookName.equals("")){
                     return;
                 }
-                editText.setText("");
-                if (progressBar.getVisibility() == View.VISIBLE){
-                    progressDialog.show();
-                }else
-                {
-                    System.out.println("正在从onClick方法进入asyncTask");
-                    lvList.removeAll(lvList);
-                    simpleAdapter.notifyDataSetChanged();
-                    progressBar.setVisibility(View.VISIBLE);
-                    asyncTask[count] = (myAsyncTask) new myAsyncTask().execute(bookName, "1", count+"");
-                }
+                stopFlag = false;
+                btnSearch.setEnabled(false);
+                btnStop.setEnabled(true);
+                lvList.removeAll(lvList);
+                simpleAdapter.notifyDataSetChanged();
+                progressBar.setVisibility(View.VISIBLE);
+                progressBar.setProgress(0);
+                nowBookCount = 0;
+                new myAsyncTask().execute(bookName, "1");
             }
         });
 
@@ -114,25 +136,13 @@ public class MainActivity extends AppCompatActivity {
                 System.out.println(strings[0]);
                 Document document = Jsoup.parse(new URL("http://202.117.255.187:8080/opac/openlink.php?strSearchType=title&strText=" + strings[0] + "&page=" + strings[1]), 5000);
                 System.out.println("Connect successful!");
-                //获取总页数
-                Elements spanTags = document.select("span");
-                System.out.println("正在获取总页数:" + "http://202.117.255.187:8080/opac/openlink.php?strSearchType=title&strText=" + strings[0] + "&page=" + strings[1]);
-                boolean pageNumChanged = false;
-                for (Element spanTag : spanTags){
-                    if (spanTag.attr("class").equals("pagination")){
-                        Elements fontTags = spanTag.select("font");
-                        for (Element fontTag : fontTags){
-                            if (fontTag.attr("color").equals("black")){
-                                pageNum = Integer.parseInt(fontTag.text());
-                                pageNumChanged = true;
-                                System.out.println("doPageNum: " + pageNum);
-                            }
-                        }
-                    }
-                }
-                if (!pageNumChanged){
-                    pageNum = 1;
-                }
+                //获取条数
+                Element strongTag = document.select("strong").last();
+                if (strongTag == null){
+                    bookCount = 0;
+                    return strings;
+                }else
+                    bookCount = Integer.parseInt(strongTag.text());
 
                 Element link = document.select("ol").first();
                 if (link == null){
@@ -140,12 +150,10 @@ public class MainActivity extends AppCompatActivity {
                     return strings;
                 }
 
-                String thisCount = strings[2];
-
                 Elements liTags = link.select("li");
                 List<Map<String, String>> list = new ArrayList<Map<String, String>>();
                 for (Element liTag : liTags){
-                    if (Integer.parseInt(thisCount) < count){
+                    if (stopFlag){
                         return null;
                     }
                     Element h3Tag = liTag.select("h3").first();
@@ -218,43 +226,44 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onProgressUpdate(String... values) {
-            String book = values[0];
-            String page = values[1];
-            String thisCount = values[2];
-            if (Integer.parseInt(thisCount) < count){
-                lvList.removeAll(lvList);
-                simpleAdapter.notifyDataSetChanged();
-                //progressBar.setVisibility(View.GONE);
-                progressDialog.cancel();
-                System.out.println(book);
-                System.out.println(bookName);
-                new myAsyncTask().execute(bookName, "1", count+"");
-                return;
-            }
+            nowBookCount++;
             simpleAdapter.notifyDataSetChanged();
+            progressBar.setMax(bookCount);
+            progressBar.setProgress(nowBookCount);
             super.onProgressUpdate(values);
         }
 
         @Override
         protected void onPostExecute(String... strings) {
-            if ((strings == null)||(Integer.parseInt(strings[2]) < count)){
+            if (stopFlag){
+                progressDialog.cancel();
+                progressBar.setVisibility(View.GONE);
+                btnSearch.setEnabled(true);
+                btnStop.setEnabled(false);
+            }
+            if ((strings == null)){
                 return;
             }
-            if (lvList.size() == 0){
+            if (bookCount == 0){
                 progressBar.setVisibility(View.GONE);
                 Toast.makeText(MainActivity.this, "无结果", Toast.LENGTH_SHORT).show();
                 System.out.println("无结果");
+                btnSearch.setEnabled(true);
+                btnStop.setEnabled(false);
                 return;
             }
             String book = strings[0];
             String page = strings[1];
-            String thisCount = strings[2];
-            System.out.println("now pageNum: " + pageNum);
-            if ((Integer.parseInt(page) < pageNum)){
+            if (nowBookCount < bookCount){
                 page = (Integer.parseInt(page) + 1) + "";
-                new myAsyncTask().execute(book, page, thisCount);
+                new myAsyncTask().execute(book, page);
             }else
+            {
                 progressBar.setVisibility(View.GONE);
+                btnSearch.setEnabled(true);
+                btnStop.setEnabled(false);
+            }
+
             super.onPostExecute(strings);
         }
 

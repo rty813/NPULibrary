@@ -31,4 +31,13 @@
         android:layout_marginLeft="72dp"
         android:layout_marginStart="72dp"
         android:layout_marginTop="50dp" />
+
+    <Spinner
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/button2"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="60dp"
+        android:entries="@array/languages"
+        android:id="@+id/spinner" />
 </RelativeLayout>

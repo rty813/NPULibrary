@@ -23,6 +23,8 @@ public class Main2Activity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
         textView = (TextView) findViewById(R.id.textView);
+        findViewById(R.id.button2).setEnabled(false);
+        findViewById(R.id.spinner).setEnabled(false);
         findViewById(R.id.button2).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
