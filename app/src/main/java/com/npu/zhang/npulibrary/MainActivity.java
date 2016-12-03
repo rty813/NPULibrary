@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity{
-    private final String version = "ver1.4.1";
+    private final String version = "ver2.0";
     private EditText editText;
     private TextView textView;
     private ListView listView;
@@ -86,6 +86,7 @@ public class MainActivity extends AppCompatActivity{
         lvList = new ArrayList<>();
         simpleAdapter = new SimpleAdapter(MainActivity.this, lvList, android.R.layout.simple_list_item_2,
                 new String[] {"bookName","bookIntroduce"}, new int[] {android.R.id.text1, android.R.id.text2});
+
         listView.setAdapter(simpleAdapter);
         progressDialog = new ProgressDialog(MainActivity.this);
         progressDialog.setMessage("请等候");
