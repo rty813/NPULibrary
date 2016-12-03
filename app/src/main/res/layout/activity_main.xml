@@ -43,7 +43,7 @@
     <Spinner
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/spinner2"
+        android:id="@+id/spinner"
         android:entries="@array/languages"
         android:layout_alignBottom="@+id/editText2"
         android:layout_alignParentRight="true"
@@ -73,7 +73,6 @@
         android:text="筛选可借"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:enabled="false"
         android:id="@+id/switch1"
         android:layout_alignBaseline="@+id/btnStop"
         android:layout_alignBottom="@+id/btnStop"

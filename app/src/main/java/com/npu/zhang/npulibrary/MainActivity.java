@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity{
-    private final String version = "ver1.3.1";
+    private final String version = "ver1.4";
     private EditText editText;
     private TextView textView;
     private ListView listView;
@@ -56,6 +56,9 @@ public class MainActivity extends AppCompatActivity{
     private int bookCount;
     private int nowBookCount;
     private InputMethodManager imm;
+    private Boolean enableFilter;
+    private String campus;
+    private String nowCampus;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,6 +73,7 @@ public class MainActivity extends AppCompatActivity{
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
         progressBar.setVisibility(View.GONE);
 
+        nowCampus = "长安";
         stopFlag = false;
         lvList = new ArrayList<>();
         simpleAdapter = new SimpleAdapter(MainActivity.this, lvList, android.R.layout.simple_list_item_2,
@@ -85,6 +89,18 @@ public class MainActivity extends AppCompatActivity{
 //                startActivity(new Intent(MainActivity.this,Main2Activity.class));
 //            }
 //        });
+
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                String[] tmpCampus = getResources().getStringArray(R.array.languages);
+                nowCampus = tmpCampus[i];
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+            }
+        });
         btnStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -104,13 +120,15 @@ public class MainActivity extends AppCompatActivity{
                 if (bookName.equals("")){
                     return;
                 }
+                enableFilter = aSwitch.isChecked();
+                campus = nowCampus;
                 stopFlag = false;
                 btnSearch.setEnabled(false);
                 btnStop.setEnabled(true);
                 lvList.removeAll(lvList);
                 simpleAdapter.notifyDataSetChanged();
                 progressBar.setVisibility(View.VISIBLE);
-                progressBar.setProgress(0);
+                progressBar.setProgress(1);
                 nowBookCount = 0;
                 new myAsyncTask().execute(bookName, "1");
             }
@@ -170,6 +188,7 @@ public class MainActivity extends AppCompatActivity{
                     String bookIntroduce = pTag.text().substring(14,pTag.text().length()-6);
                     String bookNameReal = aTag.text().substring(aTag.text().indexOf(".") + 1);
                     StringBuilder builder = new StringBuilder();
+                    nowBookCount++;
 
                     Document detailDoc = Jsoup.parse(new URL(bookLink), 5000);
                     Elements tableTags = detailDoc.select("table");
@@ -188,6 +207,11 @@ public class MainActivity extends AppCompatActivity{
                                         System.out.println("此图书正在订阅");
                                         continue;
                                     }
+                                    String campusStr = tdTag1.text().replace("校区", "");
+                                    String enableStr = tdTag2.text();
+                                    if ((!campusStr.substring(0,2).equals(campus)) || ((enableFilter)&&(!enableStr.equals("可借")))){
+                                        continue;
+                                    }
                                     builder.append("\n" + tdTag1.text().replace("校区", ""));
                                     if (tdTag2.text().length() < 5)
                                         builder.append(tdTag2.text() + "\n");
@@ -198,6 +222,9 @@ public class MainActivity extends AppCompatActivity{
                         }
                     }
                     String bookPlace = builder.toString();
+                    if (bookPlace.equals("")){
+                        continue;
+                    }
                     if (bookPlace.equals("")){
                         bookPlace = "\n此书刊可能正在订购中或者处理中";
                     }
@@ -226,7 +253,6 @@ public class MainActivity extends AppCompatActivity{
 
         @Override
         protected void onProgressUpdate(String... values) {
-            nowBookCount++;
             simpleAdapter.notifyDataSetChanged();
             progressBar.setMax(bookCount);
             progressBar.setProgress(nowBookCount);
