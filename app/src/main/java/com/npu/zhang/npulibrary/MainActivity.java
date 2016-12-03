@@ -25,12 +25,18 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.apache.http.client.HttpClient;
 import org.jsoup.Jsoup;
+import org.jsoup.helper.HttpConnection;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpCookie;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,7 +44,7 @@ import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity{
-    private final String version = "ver1.4";
+    private final String version = "ver1.4.1";
     private EditText editText;
     private TextView textView;
     private ListView listView;
@@ -59,6 +65,8 @@ public class MainActivity extends AppCompatActivity{
     private Boolean enableFilter;
     private String campus;
     private String nowCampus;
+    private boolean connectFlag;
+    HttpURLConnection urlConnection;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -105,7 +113,9 @@ public class MainActivity extends AppCompatActivity{
             @Override
             public void onClick(View view) {
                 stopFlag = true;
-                progressDialog.show();
+                if (connectFlag) {
+                    progressDialog.show();
+                }
             }
         });
 
@@ -113,13 +123,14 @@ public class MainActivity extends AppCompatActivity{
             @Override
             public void onClick(View view) {
                 imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+                connectFlag = false;
                 bookName = editText.getText().toString();
                 bookName = bookName.replace("+", "%2B");
                 bookName = bookName.replace(" ", "+");
-                System.out.println(bookName);
                 if (bookName.equals("")){
                     return;
                 }
+                Toast.makeText(MainActivity.this, "请耐心等候，若下方进度条长时间无变化，请重新查询", Toast.LENGTH_LONG).show();
                 enableFilter = aSwitch.isChecked();
                 campus = nowCampus;
                 stopFlag = false;
@@ -127,8 +138,6 @@ public class MainActivity extends AppCompatActivity{
                 btnStop.setEnabled(true);
                 lvList.removeAll(lvList);
                 simpleAdapter.notifyDataSetChanged();
-                progressBar.setVisibility(View.VISIBLE);
-                progressBar.setProgress(1);
                 nowBookCount = 0;
                 new myAsyncTask().execute(bookName, "1");
             }
@@ -146,14 +155,26 @@ public class MainActivity extends AppCompatActivity{
             }
         });
     }
-    public class myAsyncTask extends AsyncTask<String, String, String[]> {
+    public class myAsyncTask extends AsyncTask<String, Void, String[]> {
         @Override
         protected String[] doInBackground(String... strings) {
             try {
-                System.out.println("Begin to connnet!");
                 System.out.println(strings[0]);
-                Document document = Jsoup.parse(new URL("http://202.117.255.187:8080/opac/openlink.php?strSearchType=title&strText=" + strings[0] + "&page=" + strings[1]), 5000);
+                System.out.println("Begin to connnet!");
+                urlConnection = (HttpURLConnection) new URL("http://202.117.255.187:8080/opac/openlink.php?strSearchType=title&strText=" + strings[0] + "&page=" + strings[1]).openConnection();
+                urlConnection.setConnectTimeout(5000);
                 System.out.println("Connect successful!");
+                BufferedReader br = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                String inputLine = "";
+                StringBuilder builder = new StringBuilder();
+                while ((inputLine = br.readLine()) != null){
+                    builder.append(inputLine);
+                }
+                urlConnection.disconnect();
+                br.close();
+
+                connectFlag = true;
+                Document document = Jsoup.parse(builder.toString());
                 //获取条数
                 Element strongTag = document.select("strong").last();
                 if (strongTag == null){
@@ -187,10 +208,17 @@ public class MainActivity extends AppCompatActivity{
                     String bookLink ="http://202.117.255.187:8080/opac/" + aTag.attr("href");
                     String bookIntroduce = pTag.text().substring(14,pTag.text().length()-6);
                     String bookNameReal = aTag.text().substring(aTag.text().indexOf(".") + 1);
-                    StringBuilder builder = new StringBuilder();
                     nowBookCount++;
 
-                    Document detailDoc = Jsoup.parse(new URL(bookLink), 5000);
+                    urlConnection = (HttpURLConnection) new URL(bookLink).openConnection();
+                    urlConnection.setConnectTimeout(5000);
+                    br = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                    while((inputLine = br.readLine()) != null){
+                        builder.append(inputLine);
+                    }
+                    Document detailDoc = Jsoup.parse(builder.toString());
+
+                    builder = new StringBuilder();
                     Elements tableTags = detailDoc.select("table");
                     for (Element tableTag : tableTags){
                         //System.out.println(tableTag.text());
@@ -223,6 +251,7 @@ public class MainActivity extends AppCompatActivity{
                     }
                     String bookPlace = builder.toString();
                     if (bookPlace.equals("")){
+                        publishProgress();
                         continue;
                     }
                     if (bookPlace.equals("")){
@@ -241,8 +270,8 @@ public class MainActivity extends AppCompatActivity{
                     map.put("bookNameReal", bookNameReal);
                     map.put("bookPlace", bookPlace);
                     lvList.add(map);
-                    publishProgress(strings);
                     list.add(map);
+                    publishProgress();
                 }
                 return strings;
             } catch (IOException e) {
@@ -252,8 +281,9 @@ public class MainActivity extends AppCompatActivity{
         }
 
         @Override
-        protected void onProgressUpdate(String... values) {
+        protected void onProgressUpdate(Void... values) {
             simpleAdapter.notifyDataSetChanged();
+            progressBar.setVisibility(View.VISIBLE);
             progressBar.setMax(bookCount);
             progressBar.setProgress(nowBookCount);
             super.onProgressUpdate(values);
