@@ -40,15 +40,6 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
 
-    <Spinner
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/spinner"
-        android:entries="@array/languages"
-        android:layout_alignBottom="@+id/editText2"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true" />
-
     <EditText
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -58,7 +49,9 @@
         android:hint="请输入书名"
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
+        android:layout_alignParentStart="true"
+        android:layout_toStartOf="@+id/btnSpeech"
+        android:layout_toLeftOf="@+id/btnSpeech" />
 
     <ProgressBar
         style="@android:style/Widget.Holo.ProgressBar.Horizontal"
@@ -75,8 +68,26 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/switch1"
-        android:layout_alignBaseline="@+id/btnStop"
-        android:layout_alignBottom="@+id/btnStop"
+        android:layout_above="@+id/listView"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <Spinner
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/spinner"
+        android:entries="@array/languages"
+        android:layout_above="@+id/switch1"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        android:layout_width="46dp"
+        android:layout_height="35dp"
+        android:id="@+id/btnSpeech"
+        android:background="@drawable/mic"
+        android:layout_alignBottom="@id/editText2"
+        android:layout_alignTop="@id/editText2"
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true" />
 

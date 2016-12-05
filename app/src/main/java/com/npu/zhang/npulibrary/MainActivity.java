@@ -1,31 +1,45 @@
 package com.npu.zhang.npulibrary;
 
+import android.Manifest;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
+import android.os.Build;
+import android.speech.RecognitionListener;
+import android.speech.SpeechRecognizer;
 import android.support.annotation.IntegerRes;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.Spanned;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.SimpleAdapter;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.apache.http.client.HttpClient;
+import com.baidu.speech.VoiceRecognitionService;
+
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.helper.HttpConnection;
 import org.jsoup.nodes.Document;
@@ -39,12 +53,15 @@ import java.net.HttpCookie;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity{
-    private final String version = "ver2.0";
+    private final String version = "ver3.0";
+    private static final String TAG = "Touch";
+    private static final int EVENT_ERROR = 11;
     private EditText editText;
     private TextView textView;
     private ListView listView;
@@ -67,10 +84,15 @@ public class MainActivity extends AppCompatActivity{
     private String nowCampus;
     private boolean connectFlag;
     HttpURLConnection urlConnection;
+    View speechTips;
+    View speechWave;
+    private SpeechRecognizer speechRecognizer;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setTheme(R.style.AppTheme);
         setContentView(R.layout.activity_main);
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this, new ComponentName(this, VoiceRecognitionService.class));
         imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         spinner = (Spinner) findViewById(R.id.spinner);
         aSwitch = (Switch) findViewById(R.id.switch1);
@@ -131,7 +153,7 @@ public class MainActivity extends AppCompatActivity{
                 if (bookName.equals("")){
                     return;
                 }
-                Toast.makeText(MainActivity.this, "请耐心等候，若下方进度条长时间无变化，请重新查询", Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "请耐心等候，若下方进度条长时间无变化，请重新查询", Toast.LENGTH_SHORT).show();
                 enableFilter = aSwitch.isChecked();
                 campus = nowCampus;
                 stopFlag = false;
@@ -155,6 +177,99 @@ public class MainActivity extends AppCompatActivity{
                 startActivity(intent);
             }
         });
+        speechTips = View.inflate(this, R.layout.bd_asr_popup_speech, null);
+        speechWave = speechTips.findViewById(R.id.wave);
+        speechTips.setVisibility(View.GONE);
+        addContentView(speechTips, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        speechRecognizer.setRecognitionListener(new RecognitionListener() {
+            @Override
+            public void onReadyForSpeech(Bundle bundle) {
+
+            }
+
+            @Override
+            public void onBeginningOfSpeech() {
+
+            }
+
+            @Override
+            public void onRmsChanged(float rmsdB) {
+                final int VTAG = 0xFF00AA01;
+                Integer rawHeight = (Integer) speechWave.getTag(VTAG);
+                if (rawHeight == null) {
+                    rawHeight = speechWave.getLayoutParams().height;
+                    speechWave.setTag(VTAG, rawHeight);
+                }
+
+                RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) speechWave.getLayoutParams();
+                params.height = (int) (rawHeight * rmsdB * 0.01);
+                params.height = Math.max(params.height, speechWave.getMeasuredWidth());
+                speechWave.setLayoutParams(params);
+            }
+
+
+            @Override
+            public void onBufferReceived(byte[] bytes) {
+
+            }
+
+            @Override
+            public void onEndOfSpeech() {
+
+            }
+
+            @Override
+            public void onError(int i) {
+                Toast.makeText(MainActivity.this, "请重试", Toast.LENGTH_SHORT);
+            }
+
+            @Override
+            public void onResults(Bundle results) {
+                ArrayList<String> nbest = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                String json_res = results.getString("origin_result");
+                editText.setText(nbest.get(0));
+            }
+
+            @Override
+            public void onPartialResults(Bundle partialResults) {
+                ArrayList<String> nbest = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                if (nbest.size() > 0) {
+                     editText.setText(nbest.get(0));
+                }
+            }
+
+            @Override
+            public void onEvent(int i, Bundle bundle) {
+            }
+        });
+
+        findViewById(R.id.btnSpeech).setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        if (Build.VERSION.SDK_INT >= 23){
+                            int checkRecordPermission = ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO);
+                            if (checkRecordPermission != PackageManager.PERMISSION_GRANTED){
+                                requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 123);
+                            }
+                        }
+                        speechTips.setVisibility(View.VISIBLE);
+                        speechRecognizer.cancel();
+                        Intent intent = new Intent();
+                        intent.putExtra("vad", "touch");
+                        editText.setText("");
+                        speechRecognizer.startListening(intent);
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                        speechRecognizer.stopListening();
+                        speechTips.setVisibility(View.GONE);
+                        break;
+                }
+                return false;
+            }
+        });
+
     }
     public class myAsyncTask extends AsyncTask<String, Void, String[]> {
         @Override
