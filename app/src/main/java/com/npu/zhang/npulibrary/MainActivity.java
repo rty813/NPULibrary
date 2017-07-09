@@ -326,7 +326,7 @@ public class MainActivity extends AppCompatActivity{
                     String bookNameReal = aTag.text().substring(aTag.text().indexOf(".") + 1);
                     nowBookCount++;
 
-                    urlConnection = (HttpURLConnection) new URL(bookLink).openConnection();
+                    urlConnection = (HttpURLConnection) new URL("http://202.117.255.187:8080/opac/ajax_" + aTag.attr("href")).openConnection();
                     urlConnection.setConnectTimeout(5000);
                     br = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
                     while((inputLine = br.readLine()) != null){
@@ -345,8 +345,8 @@ public class MainActivity extends AppCompatActivity{
                                     if (trTag.select("td").first().text().indexOf("订购中") != -1){
                                         break;
                                     }
-                                    Element tdTag1 = trTag.select("td").get(4);
-                                    Element tdTag2 = trTag.select("td").get(5);
+                                    Element tdTag1 = trTag.select("td").get(3);
+                                    Element tdTag2 = trTag.select("td").get(4);
                                     if ((tdTag1 == null) && (tdTag2 == null)){
                                         System.out.println("此图书正在订阅");
                                         continue;
@@ -373,11 +373,6 @@ public class MainActivity extends AppCompatActivity{
                     if (bookPlace.equals("")){
                         bookPlace = "\n此书刊可能正在订购中或者处理中";
                     }
-//                    System.out.println("书名：" + bookName);
-//                    System.out.println("链接：" + bookLink);
-//                    System.out.println("介绍：" + bookIntroduce);
-//                    System.out.println("地址：" + bookPlace);
-                    System.out.println();
                     Map<String, String> map = new HashMap<String, String>();
 
                     map.put("bookName", bookName);

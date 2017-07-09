@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     tools:context="com.npu.zhang.npulibrary.SearchActivity">
 
@@ -11,23 +12,23 @@
         android:layout_height="wrap_content"
         android:background="@color/colorPrimary"
         android:id="@+id/toolbar">
-            <android.support.v7.widget.SearchView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:id="@+id/searchView"
-                android:searchIcon="@drawable/search"
-                android:iconifiedByDefault="false"
-                android:queryHint="在这里输入你想查询的书籍">
-            </android.support.v7.widget.SearchView>
-
+        <android.support.v7.widget.SearchView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:id="@+id/searchView"
+            android:searchIcon="@drawable/search"
+            android:iconifiedByDefault="false"
+            android:queryHint="在这里输入你想查询的书籍">
+        </android.support.v7.widget.SearchView>
     </android.support.v7.widget.Toolbar>
 
     <android.support.v7.widget.RecyclerView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="10dp"
-        android:background="#D0000000"
-        android:id="@+id/lv_search">
+        android:visibility="gone"
+        android:background="#50000000"
+        android:id="@+id/recyclerview">
     </android.support.v7.widget.RecyclerView>
 
 </LinearLayout>
