@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">NPULibrary</string>
     <string name="title_activity_main2">Main2Activity</string>
+    <string name="appwidget_text">EXAMPLE</string>
+    <string name="add_widget">Add widget</string>
+    <string name="title_activity_search">SearchActivity</string>
 </resources>
