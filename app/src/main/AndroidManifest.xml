@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.npu.zhang.npulibrary"
     android:versionCode="6"
     android:versionName="3.0">
@@ -39,16 +40,12 @@
 
         <activity
             android:name=".MainActivity"
-
             android:configChanges="orientation|keyboardHidden|screenLayout"
             android:theme="@style/LaunchStyle">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
-        <activity android:name=".DetailActivity"
+        <activity
+            android:name=".DetailActivity"
             android:excludeFromRecents="true" />
         <activity
             android:name="com.baidu.voicerecognition.android.ui.BaiduASRDigitalDialog"
@@ -75,9 +72,17 @@
 
         <activity
             android:name=".SearchActivity"
+            android:excludeFromRecents="true"
             android:label="@string/title_activity_search"
-            android:theme="@style/Transparent"
-            android:excludeFromRecents="true">
+            android:theme="@style/Transparent"></activity>
+
+        <activity android:name=".testActivity"
+            android:theme="@style/Transparent">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
     </application>
 

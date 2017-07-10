@@ -1,26 +1,32 @@
 package com.npu.zhang.npulibrary;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.LayoutRes;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.AppCompatImageView;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
-import android.view.Gravity;
-import android.view.LayoutInflater;
+import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import android.view.WindowManager;
+import android.view.ViewGroup;
 import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;
-import android.widget.ListView;
-import android.widget.PopupWindow;
+import android.widget.Filterable;
+import android.widget.ListAdapter;
 import android.widget.Toast;
+
+import com.miguelcatalan.materialsearchview.MaterialSearchView;
+import com.miguelcatalan.materialsearchview.SearchAdapter;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -36,10 +42,13 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public class SearchActivity extends AppCompatActivity {
 
+public class testActivity extends AppCompatActivity {
+
+    private MaterialSearchView searchView;
     private RecyclerViewAdapter adapter;
     private ArrayList<Map<String, String>> list;
     private RecyclerView recyclerView;
@@ -48,56 +57,87 @@ public class SearchActivity extends AppCompatActivity {
     private int loadedPages = 1;
     private boolean lastPageFlag = false;
     private int lastPage;
-    private SearchView searchView;
-    private ListView popupListView;
-    private ArrayList<String> popupList;
-    private ArrayAdapter<String> popupAdapter;
-    private PopupWindow popupWindow;
-
+    private ArrayList<Object> suggestionList;
+    private myAdapter suggestionAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_search);
+        setContentView(R.layout.activity_test);
+        final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.setTitle("NPULibrary");
+        toolbar.setTitleTextColor(Color.WHITE);
+        setSupportActionBar(toolbar);
 
-        initSearchView();
         initRecyclerView();
-        initPopupWindow();
 
-    }
+        searchView = (MaterialSearchView) findViewById(R.id.materialSearchView);
+        searchView.setEnabled(false);
+        suggestionList = new ArrayList<>();
+        suggestionAdapter = new myAdapter(this, android.R.layout.simple_list_item_1, suggestionList);
+        searchView.setAdapter(suggestionAdapter);
+        searchView.setSuggestionIcon(getDrawable(R.drawable.history));
 
-    private void initSearchView(){
-        searchView = (SearchView) findViewById(R.id.searchView);
-        searchView.setIconified(false);
-        searchView.setIconifiedByDefault(false);
-        searchView.setSubmitButtonEnabled(true);
-        searchView.setQueryHint("在此输入查询的书籍名称");
+        searchView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                searchView.setQuery((String)suggestionAdapter.getItem(position), false);
+            }
+        });
 
-        final AppCompatImageView search_button = (AppCompatImageView) searchView.findViewById(android.support.v7.appcompat.R.id.search_button);
-        search_button.setImageResource(R.drawable.search);
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+        SharedPreferences sharedPreferences = getSharedPreferences("history", 0);
+        String longHistory = sharedPreferences.getString("history", null);
+        if (longHistory != null){
+            String[] history = longHistory.split("\\|");
+            int length = history.length;
+            for (int i = 0; i < length; i++){
+                if (suggestionList.contains(history[i]) || history[i].equals("")){
+                    continue;
+                }
+                suggestionList.add(history[i]);
+            }
+            suggestionAdapter = new myAdapter(this, android.R.layout.simple_list_item_1, suggestionList);
+            searchView.setAdapter(suggestionAdapter);
+        }
+
+        searchView.post(new Runnable() {
+            @Override
+            public void run() {
+                searchView.showSearch();
+            }
+        });
+
+        searchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                popupWindow.showAsDropDown(searchView);
                 if (!finishFlag){
                     return false;
                 }
-                SharedPreferences sharedPreferences = getSharedPreferences("history", 0);
-                String longHistory = sharedPreferences.getString("history", "");
-                sharedPreferences.edit().putString("history", query + "|" + longHistory).apply();
-                popupList.add(0, query);
-                if (popupList.size() > 10){
-                    popupList.remove(10);
-                }
-                popupAdapter.notifyDataSetChanged();
+                searchView.closeSearch();
 
-                searchView.clearFocus();
+                SharedPreferences sharedPreferences = getSharedPreferences("history", 0);
+                String longHistory = sharedPreferences.getString("history", null);
+                if (longHistory == null){
+                    sharedPreferences.edit().putString("history", "|" + query + "|").apply();
+                    suggestionList.add(0, query);
+                }
+                else{
+                    if (!longHistory.contains("|" + query + "|")){
+                        sharedPreferences.edit().putString("history", "|" + query + longHistory).apply();
+                        suggestionList.add(0, query);
+                    }
+                }
+                suggestionAdapter = new myAdapter(testActivity.this, android.R.layout.simple_list_item_1, suggestionList);
+                searchView.setAdapter(suggestionAdapter);
+
                 lastPageFlag = false;
                 list.removeAll(list);
                 adapter.notifyDataSetChanged();
                 adapter.setFootViewText("正在加载中...");
                 recyclerView.setVisibility(View.VISIBLE);
+                toolbar.setTitle(query);
                 bookname = query.replace("+", "%2B").replace(" ", "+");
+
                 new myAsyncTask().execute(bookname, "1");
                 return false;
             }
@@ -107,31 +147,11 @@ public class SearchActivity extends AppCompatActivity {
                 return false;
             }
         });
-
-        searchView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (hasFocus){
-                    Toast.makeText(SearchActivity.this, "获得焦点！", Toast.LENGTH_SHORT).show();
-                    popupWindow.showAsDropDown(searchView);
-                }
-                else{
-                    Toast.makeText(SearchActivity.this, "失去焦点！", Toast.LENGTH_SHORT).show();
-                    popupWindow.dismiss();
-                }
-            }
-        });
-
-        EditText textView = (EditText) searchView.findViewById(android.support.v7.appcompat.R.id.search_src_text);
-        textView.setTextColor(Color.WHITE);//字体颜色
-        textView.setHintTextColor(Color.rgb(150, 150, 150));
     }
 
     private void initRecyclerView(){
-
-
 //        RecyclerView
-        recyclerView = (RecyclerView) findViewById(R.id.recyclerview);
+        recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new RecyclerViewAdapter();
@@ -159,7 +179,7 @@ public class SearchActivity extends AppCompatActivity {
             @Override
             public void onItemClick(View v, int position) {
                 HashMap<String, String> map = (HashMap<String, String>) list.get(position);
-                Intent intent = new Intent(SearchActivity.this, DetailActivity.class);
+                Intent intent = new Intent(testActivity.this, DetailActivity.class);
                 intent.putExtra("url", map.get("bookLink"));
                 intent.putExtra("bookNameReal", map.get("bookNameReal"));
                 startActivity(intent);
@@ -167,42 +187,30 @@ public class SearchActivity extends AppCompatActivity {
         });
     }
 
-    private void initPopupWindow(){
-        View contentView = LayoutInflater.from(getApplicationContext()).inflate(R.layout.popupwindow, null);
-        contentView.setBackgroundColor(Color.WHITE);
-
-        popupWindow = new PopupWindow(findViewById(R.id.mainLayout), WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
-        popupWindow.setContentView(contentView);
-
-        popupListView =(ListView)contentView.findViewById(R.id.pop_list);
-        popupList = new ArrayList<>();
-        popupAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, popupList);
-        popupListView.setAdapter(popupAdapter);
-
-        popupListView.setItemsCanFocus(false);
-        popupListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-
-        popupWindow.setFocusable(true);
-
-        SharedPreferences sharedPreferences = getSharedPreferences("history", 0);
-        String longHistory = sharedPreferences.getString("history", null);
-        if (longHistory != null){
-            String[] history = longHistory.split("\\|");
-            int length = Math.min(history.length, 10);
-            for (int i = 0; i < length; i++){
-                popupList.add(0, history[i]);
-            }
-            popupAdapter.notifyDataSetChanged();
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_search) {
+            searchView.showSearch(true);
+            searchView.setVisibility(View.VISIBLE);
         }
-
-
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
-    protected void onResume() {
-        searchView.clearFocus();
-        super.onResume();
+    public void onBackPressed() {
+        if (searchView.isSearchOpen()) {
+            searchView.closeSearch();
+
+        } else {
+            super.onBackPressed();
+        }
     }
+
 
     public class myAsyncTask extends AsyncTask<String, Void, String[]> {
         @Override
@@ -373,5 +381,11 @@ public class SearchActivity extends AppCompatActivity {
             adapter.notifyDataSetChanged();
         }
 
+    }
+
+    private class myAdapter extends ArrayAdapter implements ListAdapter{
+        public myAdapter(@NonNull Context context, @LayoutRes int resource, @NonNull List objects) {
+            super(context, resource, objects);
+        }
     }
 }

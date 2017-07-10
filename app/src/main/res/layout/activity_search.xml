@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/mainLayout"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     tools:context="com.npu.zhang.npulibrary.SearchActivity">
@@ -16,6 +17,7 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:id="@+id/searchView"
+            android:focusable="true"
             android:searchIcon="@drawable/search"
             android:iconifiedByDefault="false"
             android:queryHint="在这里输入你想查询的书籍">
