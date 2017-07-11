@@ -1,19 +1,24 @@
 package com.npu.zhang.npulibrary;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -25,6 +30,10 @@ import android.widget.Filterable;
 import android.widget.ListAdapter;
 import android.widget.Toast;
 
+import com.amap.api.location.AMapLocation;
+import com.amap.api.location.AMapLocationClient;
+import com.amap.api.location.AMapLocationClientOption;
+import com.amap.api.location.AMapLocationListener;
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
 import com.miguelcatalan.materialsearchview.SearchAdapter;
 
@@ -59,17 +68,21 @@ public class testActivity extends AppCompatActivity {
     private int lastPage;
     private ArrayList<Object> suggestionList;
     private myAdapter suggestionAdapter;
+    private AMapLocationClient mLocationClient;
+    private Toolbar toolbar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_test);
-        final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle("NPULibrary");
         toolbar.setTitleTextColor(Color.WHITE);
+        toolbar.setSubtitleTextColor(Color.WHITE);
         setSupportActionBar(toolbar);
 
         initRecyclerView();
+        getLocation();
 
         searchView = (MaterialSearchView) findViewById(R.id.materialSearchView);
         searchView.setEnabled(false);
@@ -150,6 +163,53 @@ public class testActivity extends AppCompatActivity {
         });
     }
 
+    private void getLocation() {
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            //申请WRITE_EXTERNAL_STORAGE权限
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                    100);//自定义的code
+        }
+
+
+//声明定位回调监听器
+        AMapLocationListener mLocationListener = new AMapLocationListener() {
+            @Override
+            public void onLocationChanged(AMapLocation aMapLocation) {
+                if (aMapLocation != null) {
+                    System.out.println("onLocationChanged");
+                    if (aMapLocation.getErrorCode() == 0) {
+                        if (aMapLocation.getDistrict().equals("碑林区")){
+                            toolbar.setSubtitle("友谊校区");
+                        }
+                        else{
+                            toolbar.setSubtitle("长安校区");
+                        }
+                    }
+                    else{
+                        Log.e("AmapError","location Error, ErrCode:"
+                                + aMapLocation.getErrorCode() + ", errInfo:"
+                                + aMapLocation.getErrorInfo());
+                    }
+                }
+            }
+        };
+//初始化定位
+        mLocationClient = new AMapLocationClient(getApplicationContext());
+//设置定位回调监听
+        mLocationClient.setLocationListener(mLocationListener);
+
+        //声明AMapLocationClientOption对象
+        AMapLocationClientOption mLocationOption = new AMapLocationClientOption();
+        mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Battery_Saving);
+        mLocationOption.setOnceLocation(true);
+        mLocationOption.setOnceLocationLatest(true);
+        mLocationClient.setLocationOption(mLocationOption);
+        mLocationClient.startLocation();
+    }
+
+
     private void initRecyclerView(){
 //        RecyclerView
         recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
@@ -184,6 +244,13 @@ public class testActivity extends AppCompatActivity {
                 intent.putExtra("url", map.get("bookLink"));
                 intent.putExtra("bookNameReal", map.get("bookNameReal"));
                 startActivity(intent);
+            }
+        });
+
+        adapter.setOnItemLongClickListener(new RecyclerViewAdapter.onRecyclerViewItemLongClickListener() {
+            @Override
+            public void onItemLongTouch(View v, int position) {
+                Toast.makeText(testActivity.this, String.valueOf(position), Toast.LENGTH_SHORT).show();
             }
         });
     }

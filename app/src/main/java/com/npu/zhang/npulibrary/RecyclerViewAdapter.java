@@ -23,6 +23,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter {
     private String footViewText = "正在加载中...";
     private ArrayList<Map<String, String>> list;
     private onRecyclerViewItemClickListener itemClickListener = null;
+    private onRecyclerViewItemLongClickListener itemLongClickListener = null;
     public RecyclerViewAdapter(){
         super();
         list = new ArrayList<>();
@@ -79,6 +80,15 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter {
                 }
             }
         });
+        mView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                if (itemLongClickListener != null){
+                    itemLongClickListener.onItemLongTouch(v, (Integer) v.getTag());
+                }
+                return true;
+            }
+        });
         return new MyViewHolder(mView, NORMAL_TYPE);
     }
 
@@ -126,7 +136,15 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter {
         this.itemClickListener = listener;
     }
 
+    public void setOnItemLongClickListener(onRecyclerViewItemLongClickListener listener){
+        this.itemLongClickListener = listener;
+    }
+
     public interface onRecyclerViewItemClickListener {
         void onItemClick(View v, int position);
+    }
+
+    public interface onRecyclerViewItemLongClickListener {
+        void onItemLongTouch(View v, int position);
     }
 }

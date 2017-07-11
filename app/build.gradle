@@ -34,4 +34,5 @@ dependencies {
     compile 'com.miguelcatalan:materialsearchview:1.4.0'
     compile 'com.android.support.constraint:constraint-layout:1.0.0-alpha7'
     testCompile 'junit:junit:4.12'
+    compile files('libs/AMap_Location_V3.4.1_20170629.jar')
 }
