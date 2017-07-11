@@ -19,6 +19,7 @@
         <com.miguelcatalan.materialsearchview.MaterialSearchView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            style="@style/MaterialSearchViewStyle"
             android:id="@+id/materialSearchView">
 
         </com.miguelcatalan.materialsearchview.MaterialSearchView>

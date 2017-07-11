@@ -76,7 +76,8 @@ public class testActivity extends AppCompatActivity {
         suggestionList = new ArrayList<>();
         suggestionAdapter = new myAdapter(this, android.R.layout.simple_list_item_1, suggestionList);
         searchView.setAdapter(suggestionAdapter);
-        searchView.setSuggestionIcon(getDrawable(R.drawable.history));
+
+//        searchView.setSuggestionIcon(getDrawable(R.drawable.history));
 
         searchView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -245,6 +246,7 @@ public class testActivity extends AppCompatActivity {
                         Element font = span.select("font").last();
                         if (font == null){
                             lastPage = 1;
+                            lastPageFlag = true;
                         }
                         else{
                             lastPage = Integer.parseInt(font.text());
@@ -325,7 +327,9 @@ public class testActivity extends AppCompatActivity {
                             for (Element dl : dls){
                                 if (dl.select("dt").first().text().contains("ISBN")){
                                     isbn = dl.select("dd").first().text();
-                                    isbn = isbn.substring(0, isbn.indexOf('/')).replace("-", "");
+                                    if (isbn.indexOf('/') >= 0){
+                                        isbn = isbn.substring(0, isbn.indexOf('/')).replace("-", "");
+                                    }
                                     break;
                                 }
                             }
