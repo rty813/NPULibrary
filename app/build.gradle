@@ -33,6 +33,7 @@ dependencies {
     compile 'com.squareup.picasso:picasso:2.5.2'
     compile 'com.miguelcatalan:materialsearchview:1.4.0'
     compile 'com.android.support.constraint:constraint-layout:1.0.0-alpha7'
+    compile 'com.yanzhenjie:recyclerview-swipe:1.0.4'
     testCompile 'junit:junit:4.12'
     compile files('libs/AMap_Location_V3.4.1_20170629.jar')
 }

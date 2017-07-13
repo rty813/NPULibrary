@@ -36,6 +36,12 @@ import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
 import com.miguelcatalan.materialsearchview.SearchAdapter;
+import com.yanzhenjie.recyclerview.swipe.Closeable;
+import com.yanzhenjie.recyclerview.swipe.OnSwipeMenuItemClickListener;
+import com.yanzhenjie.recyclerview.swipe.SwipeMenu;
+import com.yanzhenjie.recyclerview.swipe.SwipeMenuCreator;
+import com.yanzhenjie.recyclerview.swipe.SwipeMenuItem;
+import com.yanzhenjie.recyclerview.swipe.SwipeMenuRecyclerView;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -60,7 +66,7 @@ public class testActivity extends AppCompatActivity {
     private MaterialSearchView searchView;
     private RecyclerViewAdapter adapter;
     private ArrayList<Map<String, String>> list;
-    private RecyclerView recyclerView;
+    private SwipeMenuRecyclerView recyclerView;
     private boolean finishFlag = true;
     private String bookname = null;
     private int loadedPages = 1;
@@ -70,6 +76,7 @@ public class testActivity extends AppCompatActivity {
     private myAdapter suggestionAdapter;
     private AMapLocationClient mLocationClient;
     private Toolbar toolbar;
+    private MyDatabase database;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,14 +90,13 @@ public class testActivity extends AppCompatActivity {
 
         initRecyclerView();
         getLocation();
+        database = new MyDatabase(null);
 
         searchView = (MaterialSearchView) findViewById(R.id.materialSearchView);
         searchView.setEnabled(false);
         suggestionList = new ArrayList<>();
         suggestionAdapter = new myAdapter(this, android.R.layout.simple_list_item_1, suggestionList);
         searchView.setAdapter(suggestionAdapter);
-
-//        searchView.setSuggestionIcon(getDrawable(R.drawable.history));
 
         searchView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -99,20 +105,13 @@ public class testActivity extends AppCompatActivity {
             }
         });
 
-        SharedPreferences sharedPreferences = getSharedPreferences("history", 0);
-        String longHistory = sharedPreferences.getString("history", null);
-        if (longHistory != null){
-            String[] history = longHistory.split("\\|");
-            int length = history.length;
-            for (int i = 0; i < length; i++){
-                if (suggestionList.contains(history[i]) || history[i].equals("")){
-                    continue;
-                }
-                suggestionList.add(history[i]);
-            }
-            suggestionAdapter = new myAdapter(this, android.R.layout.simple_list_item_1, suggestionList);
-            searchView.setAdapter(suggestionAdapter);
+        String[] history = database.getHistory(5);
+        int length = history.length;
+        for (int i = 0; i < length; i++){
+            suggestionList.add(history[i]);
         }
+        suggestionAdapter = new myAdapter(this, android.R.layout.simple_list_item_1, suggestionList);
+        searchView.setAdapter(suggestionAdapter);
 
         searchView.post(new Runnable() {
             @Override
@@ -128,19 +127,8 @@ public class testActivity extends AppCompatActivity {
                     return false;
                 }
                 searchView.closeSearch();
-
-                SharedPreferences sharedPreferences = getSharedPreferences("history", 0);
-                String longHistory = sharedPreferences.getString("history", null);
-                if (longHistory == null){
-                    sharedPreferences.edit().putString("history", "|" + query + "|").apply();
-                    suggestionList.add(0, query);
-                }
-                else{
-                    if (!longHistory.contains("|" + query + "|")){
-                        sharedPreferences.edit().putString("history", "|" + query + longHistory).apply();
-                        suggestionList.add(0, query);
-                    }
-                }
+                database.insertaHistory(query, System.currentTimeMillis());
+                suggestionList.add(0, query);
                 suggestionAdapter = new myAdapter(testActivity.this, android.R.layout.simple_list_item_1, suggestionList);
                 searchView.setAdapter(suggestionAdapter);
 
@@ -212,12 +200,36 @@ public class testActivity extends AppCompatActivity {
 
     private void initRecyclerView(){
 //        RecyclerView
-        recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
+        recyclerView = (SwipeMenuRecyclerView) findViewById(R.id.recyclerView);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new RecyclerViewAdapter();
         recyclerView.setAdapter(adapter);
         list = adapter.getList();
+        recyclerView.setLongPressDragEnabled(true);
+
+        // 创建菜单：
+        SwipeMenuCreator swipeMenuCreator = new SwipeMenuCreator() {
+            @Override
+            public void onCreateMenu(SwipeMenu leftMenu, SwipeMenu rightMenu, int viewType) {
+                int width = ViewGroup.LayoutParams.WRAP_CONTENT;
+                int height = ViewGroup.LayoutParams.MATCH_PARENT;
+                SwipeMenuItem closeItem = new SwipeMenuItem(testActivity.this)
+                        .setBackgroundDrawable(R.color.colorAccent)
+                        .setImage(R.drawable.ic_store) // 图片。
+                        .setWidth(width) // 菜单宽度。
+                        .setHeight(height); // 菜单高度。
+                rightMenu.addMenuItem(closeItem); // 在右侧添加一个菜单。
+            }
+        };
+        recyclerView.setSwipeMenuCreator(swipeMenuCreator);
+
+        recyclerView.setSwipeMenuItemClickListener(new OnSwipeMenuItemClickListener() {
+            @Override
+            public void onItemClick(Closeable closeable, int adapterPosition, int menuPosition, int direction) {
+                Toast.makeText(testActivity.this, String.valueOf(adapterPosition), Toast.LENGTH_SHORT).show();
+            }
+        });
 
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -458,5 +470,11 @@ public class testActivity extends AppCompatActivity {
         public myAdapter(@NonNull Context context, @LayoutRes int resource, @NonNull List objects) {
             super(context, resource, objects);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        database.closeDB();
+        super.onDestroy();
     }
 }

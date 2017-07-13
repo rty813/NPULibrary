@@ -20,7 +20,7 @@ public class SearchWidget extends AppWidgetProvider {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.search_widget);
 
         PendingIntent intent = PendingIntent.getActivity(context, 0,
-                new Intent(context, testActivity.class), 0);
+                new Intent(context, SearchActivity.class), 0);
         views.setOnClickPendingIntent(R.id.btn_search, intent);
 
         // Instruct the widget manager to update the widget
