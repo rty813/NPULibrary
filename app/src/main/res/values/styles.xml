@@ -27,6 +27,16 @@
 
         <!-- Hint for edit text -->
         <item name="android:hint">@string/search_hint</item>
+
+
     </style>
+
+    <style name="AppTheme.ActionBar" parent="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="actionMenuTextColor">#fff</item>
+        <item name="android:colorBackground">#fff</item>
+        <item name="android:textColor">#000</item>
+        <item name="overlapAnchor">false</item>
+    </style>
+
 
 </resources>

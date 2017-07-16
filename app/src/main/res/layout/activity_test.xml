@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
+
+    <com.yanzhenjie.recyclerview.swipe.SwipeMenuRecyclerView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="?attr/actionBarSize"
+        android:visibility="gone"
+        style="@style/MaterialSearchViewStyle"
+        android:id="@+id/recyclerView">
+
+    </com.yanzhenjie.recyclerview.swipe.SwipeMenuRecyclerView>
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -13,6 +23,7 @@
         <android.support.v7.widget.Toolbar
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            app:theme="@style/AppTheme.ActionBar"
             android:id="@+id/toolbar"
             android:background="@color/colorPrimary">
         </android.support.v7.widget.Toolbar>
@@ -25,14 +36,4 @@
         </com.miguelcatalan.materialsearchview.MaterialSearchView>
 
     </FrameLayout>
-
-    <com.yanzhenjie.recyclerview.swipe.SwipeMenuRecyclerView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="gone"
-        android:id="@+id/recyclerView">
-
-    </com.yanzhenjie.recyclerview.swipe.SwipeMenuRecyclerView>
-
-</LinearLayout>
+</FrameLayout>

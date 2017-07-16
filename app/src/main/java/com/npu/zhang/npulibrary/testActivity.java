@@ -1,46 +1,37 @@
 package com.npu.zhang.npulibrary;
 
 import android.Manifest;
-import android.content.Context;
+import android.app.ProgressDialog;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.LayoutRes;
-import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AbsListView;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Filterable;
-import android.widget.ListAdapter;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
+import com.amap.api.location.CoordinateConverter;
+import com.amap.api.location.DPoint;
+import com.daimajia.androidanimations.library.Techniques;
+import com.daimajia.androidanimations.library.YoYo;
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
-import com.miguelcatalan.materialsearchview.SearchAdapter;
-import com.yanzhenjie.recyclerview.swipe.Closeable;
-import com.yanzhenjie.recyclerview.swipe.OnSwipeMenuItemClickListener;
-import com.yanzhenjie.recyclerview.swipe.SwipeMenu;
-import com.yanzhenjie.recyclerview.swipe.SwipeMenuCreator;
-import com.yanzhenjie.recyclerview.swipe.SwipeMenuItem;
+import com.wooplr.spotlight.SpotlightView;
 import com.yanzhenjie.recyclerview.swipe.SwipeMenuRecyclerView;
 
 import org.json.JSONException;
@@ -56,8 +47,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 
@@ -72,65 +63,107 @@ public class testActivity extends AppCompatActivity {
     private int loadedPages = 1;
     private boolean lastPageFlag = false;
     private int lastPage;
-    private ArrayList<Object> suggestionList;
-    private myAdapter suggestionAdapter;
+    private ArrayList<String> suggestionList;
     private AMapLocationClient mLocationClient;
     private Toolbar toolbar;
-    private MyDatabase database;
+    public static MyDatabase database;
+    private String[] history;
+    private ProgressDialog progressDialog;
+    private String mQuery;
+    private String campus = "长安校区";
+    private boolean isFirstStart = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_test);
+
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle("NPULibrary");
         toolbar.setTitleTextColor(Color.WHITE);
+        toolbar.setSubtitle("长安校区");
         toolbar.setSubtitleTextColor(Color.WHITE);
         setSupportActionBar(toolbar);
+        toolbar.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                if (toolbar.getSubtitle().equals("友谊校区")){
+                    toolbar.setSubtitle("长安校区");
+                    campus = "长安校区";
+                }
+                else{
+                    toolbar.setSubtitle("友谊校区");
+                    campus = "友谊校区";
+                }
+                Toast.makeText(testActivity.this, "请重新检索", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+        });
+        toolbar.post(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < toolbar.getChildCount(); i++){
+                    View view = toolbar.getChildAt(i);
+                    if (view instanceof TextView){
+                        final TextView textView = (TextView) view;
+                        if (textView.getText().toString().contains("校区")){
+                            new SpotlightView.Builder(testActivity.this)
+                                    .introAnimationDuration(400)
+                                    .enableRevealAnimation(true)
+                                    .performClick(true)
+                                    .fadeinTextDuration(400)
+                                    .headingTvColor(Color.parseColor("#eb273f"))
+                                    .headingTvSize(32)
+                                    .headingTvText("长按选择校区")
+                                    .subHeadingTvColor(Color.parseColor("#ffffff"))
+                                    .subHeadingTvSize(16)
+                                    .subHeadingTvText("我会自己定位校区哦~")
+                                    .maskColor(Color.parseColor("#dc000000"))
+                                    .target(textView)
+                                    .lineAnimDuration(400)
+                                    .lineAndArcColor(Color.parseColor("#eb273f"))
+                                    .dismissOnTouch(true)
+                                    .dismissOnBackPress(true)
+                                    .enableDismissAfterShown(true)
+                                    .usageId("提示更改校区") //UNIQUE ID
+                                    .show();
+                        }
+                    }
+                }
+            }
+        });
 
         initRecyclerView();
         getLocation();
-        database = new MyDatabase(null);
+        database = new MyDatabase(this);
+
+//        dialogBuilder = new AlertDialog.Builder(this).setMessage("请稍等片刻");
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("请稍等片刻");
 
         searchView = (MaterialSearchView) findViewById(R.id.materialSearchView);
-        searchView.setEnabled(false);
-        suggestionList = new ArrayList<>();
-        suggestionAdapter = new myAdapter(this, android.R.layout.simple_list_item_1, suggestionList);
-        searchView.setAdapter(suggestionAdapter);
+        history = database.getHistory();
+        suggestionList = new ArrayList<>(Arrays.asList(history));
 
-        searchView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                searchView.setQuery((String)suggestionAdapter.getItem(position), false);
-            }
-        });
-
-        String[] history = database.getHistory(5);
-        int length = history.length;
-        for (int i = 0; i < length; i++){
-            suggestionList.add(history[i]);
-        }
-        suggestionAdapter = new myAdapter(this, android.R.layout.simple_list_item_1, suggestionList);
-        searchView.setAdapter(suggestionAdapter);
-
-        searchView.post(new Runnable() {
-            @Override
-            public void run() {
-                searchView.showSearch();
-            }
-        });
+        searchView.setSuggestions(history);
 
         searchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
                 if (!finishFlag){
+                    mQuery = query;
+                    progressDialog.show();
+                    finishFlag = true;
                     return false;
                 }
                 searchView.closeSearch();
                 database.insertaHistory(query, System.currentTimeMillis());
+                if (suggestionList.contains(query)){
+                    suggestionList.remove(suggestionList.indexOf(query));
+                }
                 suggestionList.add(0, query);
-                suggestionAdapter = new myAdapter(testActivity.this, android.R.layout.simple_list_item_1, suggestionList);
-                searchView.setAdapter(suggestionAdapter);
+                history = suggestionList.toArray(new String[suggestionList.size()]);
+                searchView.setSuggestions(history);
 
                 lastPageFlag = false;
                 list.removeAll(list);
@@ -146,6 +179,7 @@ public class testActivity extends AppCompatActivity {
 
             @Override
             public boolean onQueryTextChange(String newText) {
+//                adapter.getFilter().filter(newText);
                 return false;
             }
         });
@@ -160,7 +194,8 @@ public class testActivity extends AppCompatActivity {
                     100);//自定义的code
         }
 
-
+        final DPoint point_changan = new DPoint(34.03186, 108.76119);
+        final DPoint point_youyi = new DPoint(34.24451, 108.91121);
 //声明定位回调监听器
         AMapLocationListener mLocationListener = new AMapLocationListener() {
             @Override
@@ -168,11 +203,15 @@ public class testActivity extends AppCompatActivity {
                 if (aMapLocation != null) {
                     System.out.println("onLocationChanged");
                     if (aMapLocation.getErrorCode() == 0) {
-                        if (aMapLocation.getDistrict().equals("碑林区")){
+                        DPoint point = new DPoint(aMapLocation.getLatitude(), aMapLocation.getLongitude());
+                        if (CoordinateConverter.calculateLineDistance(point, point_changan)
+                                > CoordinateConverter.calculateLineDistance(point, point_youyi)){
                             toolbar.setSubtitle("友谊校区");
+                            campus = "友谊校区";
                         }
                         else{
                             toolbar.setSubtitle("长安校区");
+                            campus = "长安校区";
                         }
                     }
                     else{
@@ -206,30 +245,6 @@ public class testActivity extends AppCompatActivity {
         adapter = new RecyclerViewAdapter();
         recyclerView.setAdapter(adapter);
         list = adapter.getList();
-        recyclerView.setLongPressDragEnabled(true);
-
-        // 创建菜单：
-        SwipeMenuCreator swipeMenuCreator = new SwipeMenuCreator() {
-            @Override
-            public void onCreateMenu(SwipeMenu leftMenu, SwipeMenu rightMenu, int viewType) {
-                int width = ViewGroup.LayoutParams.WRAP_CONTENT;
-                int height = ViewGroup.LayoutParams.MATCH_PARENT;
-                SwipeMenuItem closeItem = new SwipeMenuItem(testActivity.this)
-                        .setBackgroundDrawable(R.color.colorAccent)
-                        .setImage(R.drawable.ic_store) // 图片。
-                        .setWidth(width) // 菜单宽度。
-                        .setHeight(height); // 菜单高度。
-                rightMenu.addMenuItem(closeItem); // 在右侧添加一个菜单。
-            }
-        };
-        recyclerView.setSwipeMenuCreator(swipeMenuCreator);
-
-        recyclerView.setSwipeMenuItemClickListener(new OnSwipeMenuItemClickListener() {
-            @Override
-            public void onItemClick(Closeable closeable, int adapterPosition, int menuPosition, int direction) {
-                Toast.makeText(testActivity.this, String.valueOf(adapterPosition), Toast.LENGTH_SHORT).show();
-            }
-        });
 
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -262,9 +277,13 @@ public class testActivity extends AppCompatActivity {
         adapter.setOnItemLongClickListener(new RecyclerViewAdapter.onRecyclerViewItemLongClickListener() {
             @Override
             public void onItemLongTouch(View v, int position) {
-                Toast.makeText(testActivity.this, String.valueOf(position), Toast.LENGTH_SHORT).show();
+                YoYo.with(Techniques.Pulse).duration(700).playOn(adapter.getCardView(position));
+                database.insertStore(list.get(position));
+                searchView.showSuggestions();
+                Toast.makeText(testActivity.this, "已收藏", Toast.LENGTH_SHORT).show();
             }
         });
+
     }
 
     @Override
@@ -274,9 +293,21 @@ public class testActivity extends AppCompatActivity {
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.action_search) {
-            searchView.showSearch(true);
-            searchView.setVisibility(View.VISIBLE);
+        switch (item.getItemId()){
+            case R.id.action_search:
+                searchView.showSearch(true);
+                searchView.setVisibility(View.VISIBLE);
+                break;
+            case R.id.action_store:
+                startActivity(new Intent(testActivity.this, StoreActivity.class));
+                break;
+            case R.id.action_clear_history:
+                database.clearHistory();
+                history = null;
+                suggestionList.removeAll(suggestionList);
+                searchView.setSuggestions(history);
+                Toast.makeText(testActivity.this, "已清空搜索记录", Toast.LENGTH_SHORT).show();
+                break;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -333,9 +364,11 @@ public class testActivity extends AppCompatActivity {
                     }
                 }
 
-
                 Elements liTags = link.select("li");
                 for (Element liTag : liTags){
+                    if (finishFlag){
+                        break;
+                    }
                     Element h3Tag = liTag.select("h3").first();
                     Element aTag = liTag.select("a").first();
                     Element pTag = liTag.select("p").first();
@@ -375,6 +408,10 @@ public class testActivity extends AppCompatActivity {
                                         System.out.println("此图书正在订阅");
                                         continue;
                                     }
+                                    String campusStr = tdTag1.text();
+                                    if (!campusStr.substring(0,4).equals(campus)){
+                                        continue;
+                                    }
                                     builder.append("\n" + tdTag1.text() + "    " + tdTag2.text());
                                 }
                             }
@@ -382,7 +419,7 @@ public class testActivity extends AppCompatActivity {
                     }
                     String bookPlace = builder.toString();
                     if (bookPlace.equals("")){
-                        publishProgress();
+//                        publishProgress();
                         continue;
                     }
                     if (bookPlace.equals("")){
@@ -448,11 +485,61 @@ public class testActivity extends AppCompatActivity {
         protected void onProgressUpdate(Void... values) {
             adapter.notifyItemInserted(list.size());
             adapter.notifyItemChanged(list.size() + 1);
+            recyclerView.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (isFirstStart){
+                        new SpotlightView.Builder(testActivity.this)
+                                .introAnimationDuration(400)
+                                .enableRevealAnimation(true)
+                                .performClick(true)
+                                .fadeinTextDuration(400)
+                                .headingTvColor(Color.parseColor("#eb273f"))
+                                .headingTvSize(32)
+                                .headingTvText("长按收藏")
+                                .subHeadingTvColor(Color.parseColor("#ffffff"))
+                                .subHeadingTvSize(16)
+                                .subHeadingTvText("收藏几本好书~")
+                                .maskColor(Color.parseColor("#dc000000"))
+                                .target(adapter.getCardView(0))
+                                .lineAnimDuration(400)
+                                .lineAndArcColor(Color.parseColor("#eb273f"))
+                                .dismissOnTouch(true)
+                                .dismissOnBackPress(true)
+                                .enableDismissAfterShown(true)
+                                .usageId("提示收藏") //UNIQUE ID
+                                .show();
+                        isFirstStart = false;
+                    }
+                }
+            });
             super.onProgressUpdate(values);
         }
 
         @Override
         protected void onPostExecute(String... strings) {
+            if (finishFlag){
+                progressDialog.dismiss();
+                searchView.closeSearch();
+                database.insertaHistory(mQuery, System.currentTimeMillis());
+                if (suggestionList.contains(mQuery)){
+                    suggestionList.remove(suggestionList.indexOf(mQuery));
+                }
+                suggestionList.add(0, mQuery);
+                history = suggestionList.toArray(new String[suggestionList.size()]);
+                searchView.setSuggestions(history);
+
+                lastPageFlag = false;
+                list.removeAll(list);
+                adapter.notifyDataSetChanged();
+                adapter.setFootViewText("正在加载中...");
+                recyclerView.setVisibility(View.VISIBLE);
+                toolbar.setTitle(mQuery);
+                bookname = mQuery.replace("+", "%2B").replace(" ", "+");
+
+                new myAsyncTask().execute(bookname, "1");
+                return;
+            }
             finishFlag = true;
             if (lastPageFlag){
                 adapter.setFootViewText("加载完毕");
@@ -460,16 +547,9 @@ public class testActivity extends AppCompatActivity {
             if (list.size() == 0){
                 adapter.setFootViewText("无查询结果");
             }
-            searchView.setEnabled(true);
             adapter.notifyDataSetChanged();
         }
 
-    }
-
-    private class myAdapter extends ArrayAdapter implements ListAdapter{
-        public myAdapter(@NonNull Context context, @LayoutRes int resource, @NonNull List objects) {
-            super(context, resource, objects);
-        }
     }
 
     @Override
