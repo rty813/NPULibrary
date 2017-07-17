@@ -17,19 +17,14 @@ import java.util.Map;
  */
 
 public class MyDatabase {
-    private SQLiteDatabase database;
+    private DBHelper dbHelper;
 
     public MyDatabase(Context mContext){
-        String dbName = mContext.getFilesDir().getPath().split("files")[0] + "databases/" + "npulibrary.db";
-        database = SQLiteDatabase.openOrCreateDatabase(dbName, null);
-        String sql = "CREATE TABLE IF NOT EXISTS HISTORY(BOOKNAME VARCHAR, TIME INTEGER)";
-        database.execSQL(sql);
-        sql = "CREATE TABLE IF NOT EXISTS STORE(BOOKNAME VARCHAR, BOOKDETAIL VARCHAR, BOOKPIC VARCHAR," +
-                " BOOKLINK VARCHAR, BOOKNAMEREAL VARCHAR, BOOKPLACE VARCHAR)";
-        database.execSQL(sql);
+        dbHelper = new DBHelper(mContext, "npulibrary", null, 1);
     }
 
     public boolean insertStore(Map<String, String> bookinfo){
+        SQLiteDatabase database = dbHelper.getWritableDatabase();
         Cursor cursor = database.rawQuery("SELECT * FROM STORE WHERE BOOKLINK = ?", new String[]{bookinfo.get("bookLink")});
         if (cursor.getCount() == 0){
             database.execSQL("INSERT INTO STORE VALUES(?, ?, ?, ?, ?, ?)", new Object[]{
@@ -37,29 +32,31 @@ public class MyDatabase {
                     bookinfo.get("bookpic"), bookinfo.get("bookLink"),
                     bookinfo.get("bookNameReal"), bookinfo.get("bookPlace")
             });
+            database.close();
             return true;
         }
+        database.close();
         return false;
     }
 
     public void removeStore(String bookLink){
+        SQLiteDatabase database = dbHelper.getWritableDatabase();
         Cursor cursor = database.rawQuery("SELECT * FROM STORE WHERE BOOKLINK=?", new String[]{bookLink});
         if (cursor.getCount() > 0){
             cursor.moveToFirst();
             System.out.println(cursor.getString(cursor.getColumnIndex("BOOKNAME")));
             database.delete("STORE", "BOOKLINK=?", new String[]{bookLink});
         }
-        else {
-            System.out.println(bookLink
-            );
-        }
+        database.close();
     }
 
     public ArrayList<Map<String, String>> getStore(){
+        SQLiteDatabase database = dbHelper.getWritableDatabase();
         Cursor cursor = database.rawQuery("SELECT * FROM STORE", null);
         cursor.moveToLast();
         ArrayList<Map<String, String>> list = new ArrayList<>();
         if (cursor.getCount() == 0){
+            database.close();
             return list;
         }
         Map<String, String> map = new HashMap<>();
@@ -80,15 +77,12 @@ public class MyDatabase {
             map.put("bookPlace", cursor.getString(cursor.getColumnIndex("BOOKPLACE")));
             list.add(map);
         }
+        database.close();
         return list;
     }
 
-
-    public void clearHistory(){
-        database.execSQL("DELETE FROM HISTORY");
-    }
-
     public void insertaHistory(String bookname, Long time){
+        SQLiteDatabase database = dbHelper.getWritableDatabase();
         Cursor cursor = database.rawQuery("SELECT * FROM HISTORY WHERE BOOKNAME = ?", new String[]{bookname});
         if (cursor.getCount() != 0){
             ContentValues values = new ContentValues();
@@ -98,9 +92,11 @@ public class MyDatabase {
         else{
             database.execSQL("INSERT INTO HISTORY VALUES (?, ?)", new Object[]{bookname, time});
         }
+        database.close();
     }
 
     public String[] getHistory(){
+        SQLiteDatabase database = dbHelper.getWritableDatabase();
         Cursor cursor = database.rawQuery("SELECT * FROM HISTORY ORDER BY TIME DESC", null);
         int count = cursor.getCount();
         String[] history = new String[count];
@@ -110,10 +106,7 @@ public class MyDatabase {
             history[i] = cursor.getString(0);
             cursor.moveToNext();
         }
-        return history;
-    }
-
-    public void closeDB(){
         database.close();
+        return history;
     }
 }

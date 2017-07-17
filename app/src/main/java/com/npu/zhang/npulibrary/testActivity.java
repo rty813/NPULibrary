@@ -606,9 +606,4 @@ public class testActivity extends AppCompatActivity {
 
     }
 
-    @Override
-    protected void onDestroy() {
-        database.closeDB();
-        super.onDestroy();
-    }
 }

@@ -6,7 +6,7 @@ android {
     useLibrary 'org.apache.http.legacy'
     defaultConfig {
         applicationId "com.npu.zhang.npulibrary"
-        minSdkVersion 21
+        minSdkVersion 19
         targetSdkVersion 25
         versionCode 40
         versionName "4.0"
