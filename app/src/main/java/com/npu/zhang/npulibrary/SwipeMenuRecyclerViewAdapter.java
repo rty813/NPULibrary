@@ -147,18 +147,18 @@ public class SwipeMenuRecyclerViewAdapter extends SwipeMenuAdapter implements Fi
                     .into(viewHolder.getIv_book());
         }
         viewHolder.itemView.setTag(position);
-        final View itemView = viewHolder.itemView;
-        itemView.post(new Runnable() {
-            @Override
-            public void run() {
-                itemView.setTranslationX(MetricUtils.getScrWidth(context));
-                itemView.animate()
-                        .translationX(0)
-                        .setInterpolator(new DecelerateInterpolator(3.f))
-                        .setDuration(200)
-                        .start();
-            }
-        });
+//        final View itemView = viewHolder.itemView;
+//        itemView.post(new Runnable() {
+//            @Override
+//            public void run() {
+//                itemView.setTranslationX(MetricUtils.getScrWidth(context));
+//                itemView.animate()
+//                        .translationX(0)
+//                        .setInterpolator(new DecelerateInterpolator(3.f))
+//                        .setDuration(200)
+//                        .start();
+//            }
+//        });
     }
 
     @Override

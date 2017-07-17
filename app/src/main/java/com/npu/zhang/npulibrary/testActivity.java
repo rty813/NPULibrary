@@ -361,16 +361,6 @@ public class testActivity extends AppCompatActivity {
                 searchView.showSearch(true);
                 searchView.setVisibility(View.VISIBLE);
                 break;
-            case R.id.action_store:
-                startActivity(new Intent(testActivity.this, StoreActivity.class));
-                break;
-            case R.id.action_clear_history:
-                database.clearHistory();
-                history = null;
-                suggestionList.removeAll(suggestionList);
-                searchView.setSuggestions(history);
-                Toast.makeText(testActivity.this, "已清空搜索记录", Toast.LENGTH_SHORT).show();
-                break;
         }
         return super.onOptionsItemSelected(item);
     }

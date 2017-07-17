@@ -3,6 +3,7 @@ package com.npu.zhang.npulibrary;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.view.MenuItemCompat;
@@ -28,7 +29,6 @@ public class StoreActivity extends AppCompatActivity implements SearchView.OnQue
     private ArrayList<Map<String, String>> list;
     private SwipeMenuRecyclerViewAdapter adapter;
     private SearchView searchView;
-    private String removeStr;
     private boolean isCancel;
 
     @Override
@@ -71,23 +71,22 @@ public class StoreActivity extends AppCompatActivity implements SearchView.OnQue
             @Override
             public void onItemDismiss(final int position) {
                 final Map<String, String> map = list.get(position);
-                removeStr = map.get("bookLink");
                 list.remove(position);
                 adapter.notifyItemRemoved(position);
+                adapter.notifyItemRangeChanged(position, list.size() - position);
                 CoordinatorLayout coordinatorLayout = (CoordinatorLayout) findViewById(R.id.store_container);
                 isCancel = false;
-                Snackbar.make(coordinatorLayout, "取消收藏", Snackbar.LENGTH_SHORT)
+                Snackbar.make(coordinatorLayout, "取消收藏", Snackbar.LENGTH_LONG)
                         .setAction("撤销", new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
                                 isCancel = true;
                                 list.add(position, map);
-//                                adapter.notifyDataSetChanged();
                                 adapter.notifyItemInserted(position);
-//                                adapter.notifyItemRangeChanged(position + 1, list.size() - position - 1);
+                                adapter.notifyItemRangeChanged(position + 1, list.size() - position);
                             }
                         })
-                        .setCallback(new MyCallBack())
+                        .setCallback(new MyCallBack(map.get("bookLink")))
                         .show();
             }
         });
@@ -121,13 +120,19 @@ public class StoreActivity extends AppCompatActivity implements SearchView.OnQue
     }
 
     private class MyCallBack extends Snackbar.Callback{
+        private String bookLink;
+        public MyCallBack(String bookLink){
+            super();
+            this.bookLink = bookLink;
+        }
         @Override
         public void onDismissed(Snackbar transientBottomBar, int event) {
             if (isCancel){
                 return;
             }
-            adapter.removeItem(removeStr);
-            database.removeStore(removeStr);
+            System.out.println("remove");
+            adapter.removeItem(bookLink);
+            database.removeStore(bookLink);
             super.onDismissed(transientBottomBar, event);
         }
     }

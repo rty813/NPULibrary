@@ -44,8 +44,15 @@ public class MyDatabase {
 
     public void removeStore(String bookLink){
         Cursor cursor = database.rawQuery("SELECT * FROM STORE WHERE BOOKLINK=?", new String[]{bookLink});
-        System.out.println(cursor.getCount());
-        database.delete("STORE", "BOOKLINK=?", new String[]{bookLink});
+        if (cursor.getCount() > 0){
+            cursor.moveToFirst();
+            System.out.println(cursor.getString(cursor.getColumnIndex("BOOKNAME")));
+            database.delete("STORE", "BOOKLINK=?", new String[]{bookLink});
+        }
+        else {
+            System.out.println(bookLink
+            );
+        }
     }
 
     public ArrayList<Map<String, String>> getStore(){
