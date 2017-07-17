@@ -1,19 +1,24 @@
 package com.npu.zhang.npulibrary;
 
+import android.content.Context;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.npu.zhang.npulibrary.AnimHelper;
+import com.npu.zhang.npulibrary.recyclerview_anim.MetricUtils;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.StringTokenizer;
 
 /**
  * Created by zhang on 2017/7/9.
@@ -28,9 +33,11 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter {
     private onRecyclerViewItemClickListener itemClickListener = null;
     private onRecyclerViewItemLongClickListener itemLongClickListener = null;
     private ArrayList<CardView> cardViewArrayList;
-    public RecyclerViewAdapter(){
+    private Context context;
+    public RecyclerViewAdapter(Context context, ArrayList<Map<String, String>> list){
         super();
-        list = new ArrayList<>();
+        this.list = list;
+        this.context = context;
         cardViewArrayList = new ArrayList<>();
     }
 
@@ -77,7 +84,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter {
     }
 
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if (viewType == FOOT_TYPE){
             return new MyViewHolder(LayoutInflater.from(parent.getContext()).
                     inflate(R.layout.listview_bottom_layout, parent, false), viewType);
@@ -118,6 +125,18 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter {
                 viewHolder.getIv_book().setVisibility(View.GONE);
             }
             viewHolder.itemView.setTag(position);
+            final View itemView=holder.itemView;
+            itemView.post(new Runnable() {
+                @Override
+                public void run() {
+                    itemView.setTranslationX(MetricUtils.getScrWidth(context));
+                    itemView.animate()
+                            .translationX(0)
+                            .setInterpolator(new DecelerateInterpolator(3.f))
+                            .setDuration(200)
+                            .start();
+                }
+            });
         }
         else if (getItemViewType(position) == FOOT_TYPE){
             MyViewHolder viewHolder = (MyViewHolder) holder;
@@ -132,10 +151,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter {
     @Override
     public int getItemCount() {
         return list.size() + 1;
-    }
-
-    public ArrayList<Map<String, String>> getList() {
-        return list;
     }
 
     public void setFootViewText(String footViewText) {

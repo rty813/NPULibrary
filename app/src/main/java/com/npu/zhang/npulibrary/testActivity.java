@@ -30,8 +30,11 @@ import com.amap.api.location.CoordinateConverter;
 import com.amap.api.location.DPoint;
 import com.daimajia.androidanimations.library.Techniques;
 import com.daimajia.androidanimations.library.YoYo;
+import com.melnykov.fab.FloatingActionButton;
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
+import com.wang.avi.AVLoadingIndicatorView;
 import com.wooplr.spotlight.SpotlightView;
+import com.wooplr.spotlight.utils.SpotlightListener;
 import com.yanzhenjie.recyclerview.swipe.SwipeMenuRecyclerView;
 
 import org.json.JSONException;
@@ -72,12 +75,22 @@ public class testActivity extends AppCompatActivity {
     private String mQuery;
     private String campus = "长安校区";
     private boolean isFirstStart = true;
+    private FloatingActionButton floatingActionButton;
+    private AVLoadingIndicatorView avi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_test);
 
+        avi = (AVLoadingIndicatorView) findViewById(R.id.avi);
+        floatingActionButton = (FloatingActionButton) findViewById(R.id.fab);
+        floatingActionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(testActivity.this, StoreActivity.class));
+            }
+        });
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle("NPULibrary");
         toolbar.setTitleTextColor(Color.WHITE);
@@ -99,6 +112,7 @@ public class testActivity extends AppCompatActivity {
                 return false;
             }
         });
+
         toolbar.post(new Runnable() {
             @Override
             public void run() {
@@ -107,6 +121,38 @@ public class testActivity extends AppCompatActivity {
                     if (view instanceof TextView){
                         final TextView textView = (TextView) view;
                         if (textView.getText().toString().contains("校区")){
+                            SpotlightListener spotlightListener = new SpotlightListener() {
+                                @Override
+                                public void onUserClicked(String s) {
+                                    SpotlightListener fablistener = new SpotlightListener() {
+                                        @Override
+                                        public void onUserClicked(String s) {
+                                            searchView.showSearch();
+                                        }
+                                    };
+                                    new SpotlightView.Builder(testActivity.this)
+                                            .introAnimationDuration(400)
+                                            .enableRevealAnimation(true)
+                                            .performClick(true)
+                                            .fadeinTextDuration(400)
+                                            .headingTvColor(Color.parseColor("#eb273f"))
+                                            .headingTvSize(32)
+                                            .headingTvText("收藏入口")
+                                            .subHeadingTvColor(Color.parseColor("#ffffff"))
+                                            .subHeadingTvSize(16)
+                                            .subHeadingTvText("点我进入收藏页面~")
+                                            .maskColor(Color.parseColor("#dc000000"))
+                                            .target(floatingActionButton)
+                                            .lineAnimDuration(400)
+                                            .lineAndArcColor(Color.parseColor("#eb273f"))
+                                            .dismissOnTouch(false)
+                                            .dismissOnBackPress(true)
+                                            .enableDismissAfterShown(true)
+                                            .usageId("提示fab") //UNIQUE ID
+                                            .setListener(fablistener)
+                                            .show();
+                                }
+                            };
                             new SpotlightView.Builder(testActivity.this)
                                     .introAnimationDuration(400)
                                     .enableRevealAnimation(true)
@@ -122,10 +168,11 @@ public class testActivity extends AppCompatActivity {
                                     .target(textView)
                                     .lineAnimDuration(400)
                                     .lineAndArcColor(Color.parseColor("#eb273f"))
-                                    .dismissOnTouch(true)
+                                    .dismissOnTouch(false)
                                     .dismissOnBackPress(true)
                                     .enableDismissAfterShown(true)
                                     .usageId("提示更改校区") //UNIQUE ID
+                                    .setListener(spotlightListener)
                                     .show();
                         }
                     }
@@ -156,6 +203,8 @@ public class testActivity extends AppCompatActivity {
                     finishFlag = true;
                     return false;
                 }
+                avi.setVisibility(View.VISIBLE);
+                avi.smoothToShow();
                 searchView.closeSearch();
                 database.insertaHistory(query, System.currentTimeMillis());
                 if (suggestionList.contains(query)){
@@ -238,13 +287,13 @@ public class testActivity extends AppCompatActivity {
 
 
     private void initRecyclerView(){
-//        RecyclerView
         recyclerView = (SwipeMenuRecyclerView) findViewById(R.id.recyclerView);
-        recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new RecyclerViewAdapter();
+        list = new ArrayList<>();
+        adapter = new RecyclerViewAdapter(testActivity.this, list);
         recyclerView.setAdapter(adapter);
-        list = adapter.getList();
+        FloatingActionButton actionButton = (FloatingActionButton) findViewById(R.id.fab);
+        actionButton.attachToRecyclerView(recyclerView);
 
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -254,6 +303,7 @@ public class testActivity extends AppCompatActivity {
                     RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
                     int lastPosition = ((LinearLayoutManager) manager).findLastVisibleItemPosition();
                     if ((lastPosition >= recyclerView.getLayoutManager().getItemCount() - 2) && (finishFlag) && (!lastPageFlag)) {
+                        avi.smoothToShow();
                         loadedPages++;
                         new myAsyncTask().execute(bookname, String.valueOf(loadedPages));
                         if (loadedPages == lastPage){
@@ -504,7 +554,7 @@ public class testActivity extends AppCompatActivity {
                                 .target(adapter.getCardView(0))
                                 .lineAnimDuration(400)
                                 .lineAndArcColor(Color.parseColor("#eb273f"))
-                                .dismissOnTouch(true)
+                                .dismissOnTouch(false)
                                 .dismissOnBackPress(true)
                                 .enableDismissAfterShown(true)
                                 .usageId("提示收藏") //UNIQUE ID
@@ -547,7 +597,8 @@ public class testActivity extends AppCompatActivity {
             if (list.size() == 0){
                 adapter.setFootViewText("无查询结果");
             }
-            adapter.notifyDataSetChanged();
+            adapter.notifyItemChanged(list.size());
+            avi.smoothToHide();
         }
 
     }

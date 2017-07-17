@@ -14,7 +14,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 
+import com.wooplr.spotlight.SpotlightConfig;
 import com.wooplr.spotlight.SpotlightView;
+import com.wooplr.spotlight.utils.SpotlightListener;
 import com.yanzhenjie.recyclerview.swipe.SwipeMenuRecyclerView;
 import com.yanzhenjie.recyclerview.swipe.touch.OnItemMoveListener;
 
@@ -43,10 +45,8 @@ public class StoreActivity extends AppCompatActivity implements SearchView.OnQue
 //        searchView = (SearchView) findViewById(R.id.store_searchView);
 
         final SwipeMenuRecyclerView recyclerView = (SwipeMenuRecyclerView) findViewById(R.id.store_recyclervier);
-        recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new SwipeMenuRecyclerViewAdapter();
-        adapter.setList(list);
+        adapter = new SwipeMenuRecyclerViewAdapter(this, list);
         adapter.setOnItemClickListener(new SwipeMenuRecyclerViewAdapter.onRecyclerViewItemClickListener() {
             @Override
             public void onItemClick(View v, int position) {
@@ -92,7 +92,7 @@ public class StoreActivity extends AppCompatActivity implements SearchView.OnQue
                             .target(adapter.firstCardView)
                             .lineAnimDuration(400)
                             .lineAndArcColor(Color.parseColor("#eb273f"))
-                            .dismissOnTouch(true)
+                            .dismissOnTouch(false)
                             .dismissOnBackPress(true)
                             .enableDismissAfterShown(true)
                             .usageId("提示取消收藏") //UNIQUE ID

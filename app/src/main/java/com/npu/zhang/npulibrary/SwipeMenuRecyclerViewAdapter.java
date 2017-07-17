@@ -1,15 +1,18 @@
 package com.npu.zhang.npulibrary;
 
+import android.content.Context;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.npu.zhang.npulibrary.recyclerview_anim.MetricUtils;
 import com.squareup.picasso.Picasso;
 import com.yanzhenjie.recyclerview.swipe.SwipeMenuAdapter;
 
@@ -27,16 +30,13 @@ public class SwipeMenuRecyclerViewAdapter extends SwipeMenuAdapter implements Fi
     private onRecyclerViewItemClickListener itemClickListener = null;
     private onRecyclerViewItemLongClickListener itemLongClickListener = null;
     public CardView firstCardView;
+    private Context context;
 
-    public SwipeMenuRecyclerViewAdapter(){
+    public SwipeMenuRecyclerViewAdapter(Context context, ArrayList<Map<String, String>> list){
         super();
-        list = new ArrayList<>();
-        rawList = new ArrayList<>();
-    }
-
-    public void setList(ArrayList<Map<String, String>> list) {
         this.list = list;
-        this.rawList = (ArrayList<Map<String, String>>) list.clone();
+        this.context = context;
+        rawList = (ArrayList<Map<String, String>>) list.clone();
     }
 
     public void removeItem(String bookLink){
@@ -147,6 +147,18 @@ public class SwipeMenuRecyclerViewAdapter extends SwipeMenuAdapter implements Fi
                     .into(viewHolder.getIv_book());
         }
         viewHolder.itemView.setTag(position);
+        final View itemView = viewHolder.itemView;
+        itemView.post(new Runnable() {
+            @Override
+            public void run() {
+                itemView.setTranslationX(MetricUtils.getScrWidth(context));
+                itemView.animate()
+                        .translationX(0)
+                        .setInterpolator(new DecelerateInterpolator(3.f))
+                        .setDuration(200)
+                        .start();
+            }
+        });
     }
 
     @Override

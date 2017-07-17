@@ -134,9 +134,9 @@ public class SearchActivity extends AppCompatActivity {
         recyclerView = (RecyclerView) findViewById(R.id.recyclerview);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new RecyclerViewAdapter();
+        list = new ArrayList<>();
+        adapter = new RecyclerViewAdapter(this, list);
         recyclerView.setAdapter(adapter);
-        list = adapter.getList();
 
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
