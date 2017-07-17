@@ -6,6 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:id="@+id/store_container"
     tools:context="com.npu.zhang.npulibrary.StoreActivity">
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
@@ -19,6 +20,14 @@
             app:layout_scrollFlags="scroll|enterAlways">
         </android.support.v7.widget.Toolbar>
     </android.support.design.widget.AppBarLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:id="@+id/tv_store_hint"
+        android:text="快去收藏几本书吧~"
+        android:visibility="gone"/>
 
     <com.yanzhenjie.recyclerview.swipe.SwipeMenuRecyclerView
         android:layout_width="match_parent"

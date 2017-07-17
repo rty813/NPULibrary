@@ -3,9 +3,10 @@ package com.npu.zhang.npulibrary;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
@@ -14,9 +15,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 
-import com.wooplr.spotlight.SpotlightConfig;
 import com.wooplr.spotlight.SpotlightView;
-import com.wooplr.spotlight.utils.SpotlightListener;
 import com.yanzhenjie.recyclerview.swipe.SwipeMenuRecyclerView;
 import com.yanzhenjie.recyclerview.swipe.touch.OnItemMoveListener;
 
@@ -29,6 +28,8 @@ public class StoreActivity extends AppCompatActivity implements SearchView.OnQue
     private ArrayList<Map<String, String>> list;
     private SwipeMenuRecyclerViewAdapter adapter;
     private SearchView searchView;
+    private String removeStr;
+    private boolean isCancel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,9 +39,11 @@ public class StoreActivity extends AppCompatActivity implements SearchView.OnQue
         Toolbar toolbar = (Toolbar) findViewById(R.id.store_toolbar);
         setSupportActionBar(toolbar);
 
-
         database = testActivity.database;
         list = database.getStore();
+        if (list.size() == 0){
+            findViewById(R.id.tv_store_hint).setVisibility(View.VISIBLE);
+        }
 
 //        searchView = (SearchView) findViewById(R.id.store_searchView);
 
@@ -66,11 +69,26 @@ public class StoreActivity extends AppCompatActivity implements SearchView.OnQue
             }
 
             @Override
-            public void onItemDismiss(int position) {
-                database.removeStore(list.get(position).get("bookLink"));
-                adapter.removeItem(list.get(position).get("bookLink"));
+            public void onItemDismiss(final int position) {
+                final Map<String, String> map = list.get(position);
+                removeStr = map.get("bookLink");
                 list.remove(position);
                 adapter.notifyItemRemoved(position);
+                CoordinatorLayout coordinatorLayout = (CoordinatorLayout) findViewById(R.id.store_container);
+                isCancel = false;
+                Snackbar.make(coordinatorLayout, "取消收藏", Snackbar.LENGTH_SHORT)
+                        .setAction("撤销", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                isCancel = true;
+                                list.add(position, map);
+//                                adapter.notifyDataSetChanged();
+                                adapter.notifyItemInserted(position);
+//                                adapter.notifyItemRangeChanged(position + 1, list.size() - position - 1);
+                            }
+                        })
+                        .setCallback(new MyCallBack())
+                        .show();
             }
         });
         if (list.size() > 0){
@@ -99,6 +117,18 @@ public class StoreActivity extends AppCompatActivity implements SearchView.OnQue
                             .show();
                 }
             });
+        }
+    }
+
+    private class MyCallBack extends Snackbar.Callback{
+        @Override
+        public void onDismissed(Snackbar transientBottomBar, int event) {
+            if (isCancel){
+                return;
+            }
+            adapter.removeItem(removeStr);
+            database.removeStore(removeStr);
+            super.onDismissed(transientBottomBar, event);
         }
     }
 

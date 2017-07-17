@@ -7,10 +7,12 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -30,12 +32,10 @@ import com.amap.api.location.CoordinateConverter;
 import com.amap.api.location.DPoint;
 import com.daimajia.androidanimations.library.Techniques;
 import com.daimajia.androidanimations.library.YoYo;
-import com.melnykov.fab.FloatingActionButton;
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
 import com.wang.avi.AVLoadingIndicatorView;
 import com.wooplr.spotlight.SpotlightView;
 import com.wooplr.spotlight.utils.SpotlightListener;
-import com.yanzhenjie.recyclerview.swipe.SwipeMenuRecyclerView;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -54,13 +54,15 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import me.wangyuwei.particleview.ParticleView;
+
 
 public class testActivity extends AppCompatActivity {
 
     private MaterialSearchView searchView;
     private RecyclerViewAdapter adapter;
     private ArrayList<Map<String, String>> list;
-    private SwipeMenuRecyclerView recyclerView;
+    private RecyclerView recyclerView;
     private boolean finishFlag = true;
     private String bookname = null;
     private int loadedPages = 1;
@@ -75,12 +77,13 @@ public class testActivity extends AppCompatActivity {
     private String mQuery;
     private String campus = "长安校区";
     private boolean isFirstStart = true;
-    private FloatingActionButton floatingActionButton;
+    private android.support.design.widget.FloatingActionButton floatingActionButton;
     private AVLoadingIndicatorView avi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setTheme(R.style.AppTheme_NoActionBar);
         setContentView(R.layout.activity_test);
 
         avi = (AVLoadingIndicatorView) findViewById(R.id.avi);
@@ -179,7 +182,8 @@ public class testActivity extends AppCompatActivity {
                 }
             }
         });
-
+//        initWebView();
+        ((ParticleView) findViewById(R.id.particalView)).startAnim();
         initRecyclerView();
         getLocation();
         database = new MyDatabase(this);
@@ -194,6 +198,17 @@ public class testActivity extends AppCompatActivity {
 
         searchView.setSuggestions(history);
 
+        searchView.setOnSearchViewListener(new MaterialSearchView.SearchViewListener() {
+            @Override
+            public void onSearchViewShown() {
+                findViewById(R.id.particalView).setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onSearchViewClosed() {
+
+            }
+        });
         searchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -285,15 +300,12 @@ public class testActivity extends AppCompatActivity {
         mLocationClient.startLocation();
     }
 
-
     private void initRecyclerView(){
-        recyclerView = (SwipeMenuRecyclerView) findViewById(R.id.recyclerView);
+        recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         list = new ArrayList<>();
         adapter = new RecyclerViewAdapter(testActivity.this, list);
         recyclerView.setAdapter(adapter);
-        FloatingActionButton actionButton = (FloatingActionButton) findViewById(R.id.fab);
-        actionButton.attachToRecyclerView(recyclerView);
 
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -330,7 +342,8 @@ public class testActivity extends AppCompatActivity {
                 YoYo.with(Techniques.Pulse).duration(700).playOn(adapter.getCardView(position));
                 database.insertStore(list.get(position));
                 searchView.showSuggestions();
-                Toast.makeText(testActivity.this, "已收藏", Toast.LENGTH_SHORT).show();
+                CoordinatorLayout coordinatorLayout = (CoordinatorLayout) findViewById(R.id.container);
+                Snackbar.make(coordinatorLayout, "已收藏", Snackbar.LENGTH_SHORT).show();
             }
         });
 

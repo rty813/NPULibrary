@@ -3,6 +3,7 @@ package com.npu.zhang.npulibrary;
 import android.content.Context;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
+import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +18,7 @@ import com.npu.zhang.npulibrary.recyclerview_anim.MetricUtils;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -33,12 +35,14 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter {
     private onRecyclerViewItemClickListener itemClickListener = null;
     private onRecyclerViewItemLongClickListener itemLongClickListener = null;
     private ArrayList<CardView> cardViewArrayList;
+    private Map<Integer, CardView> cardViewMap;
+    private SparseArray<CardView> cardViewSparseArray;
     private Context context;
     public RecyclerViewAdapter(Context context, ArrayList<Map<String, String>> list){
         super();
         this.list = list;
         this.context = context;
-        cardViewArrayList = new ArrayList<>();
+        cardViewSparseArray = new SparseArray<>();
     }
 
     private class MyViewHolder extends RecyclerView.ViewHolder{
@@ -111,10 +115,11 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter {
     }
 
     @Override
-    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
         if (getItemViewType(position) == NORMAL_TYPE){
             MyViewHolder viewHolder = (MyViewHolder) holder;
-            cardViewArrayList.add(position, viewHolder.getCardView());
+            cardViewSparseArray.put(position, viewHolder.getCardView());
+
             viewHolder.getTv_bookname().setText(list.get(position).get("bookname"));
             viewHolder.getTv_bookdetail().setText(list.get(position).get("bookdetail"));
             if (list.get(position).get("bookpic") != null){
@@ -145,7 +150,9 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter {
     }
 
     public CardView getCardView(int position) {
-        return cardViewArrayList.get(position);
+//        return cardViewArrayList.get(position);
+//        return cardViewMap.get(position);
+        return  cardViewSparseArray.get(position);
     }
 
     @Override

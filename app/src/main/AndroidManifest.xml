@@ -101,7 +101,7 @@
             android:theme="@style/Transparent" />
         <activity
             android:name=".testActivity"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/LaunchStyle">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

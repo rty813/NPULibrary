@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:fab="http://schemas.android.com/tools"
     android:id="@+id/container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@android:color/white"
     android:orientation="vertical">
 
-    <com.yanzhenjie.recyclerview.swipe.SwipeMenuRecyclerView
+    <android.support.v7.widget.RecyclerView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginTop="?attr/actionBarSize"
         android:visibility="gone"
         style="@style/MaterialSearchViewStyle"
-        android:id="@+id/recyclerView">
-
-    </com.yanzhenjie.recyclerview.swipe.SwipeMenuRecyclerView>
+        android:scrollbars="vertical"
+        android:id="@+id/recyclerView"/>
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -47,13 +47,26 @@
         </com.miguelcatalan.materialsearchview.MaterialSearchView>
     </FrameLayout>
 
-    <com.melnykov.fab.FloatingActionButton
+    <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|right"
         android:layout_margin="16dp"
+        app:fab_shadow="true"
         android:src="@drawable/ic_store"/>
 
-
-</FrameLayout>
+    <me.wangyuwei.particleview.ParticleView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/particalView"
+        app:pv_background_color="@android:color/white"
+        app:pv_host_text="NPULibrary"
+        app:pv_host_text_size="34sp"
+        app:pv_particle_text="by上古豆腐"
+        app:pv_particle_text_size="14sp"
+        app:pv_text_color="@color/colorPrimary"
+        app:pv_text_anim_time="2000"
+        app:pv_spread_anim_time="2000"
+        app:pv_host_text_anim_time="1000"/>
+</android.support.design.widget.CoordinatorLayout>
